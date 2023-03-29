@@ -1,5 +1,5 @@
 all:
-	@echo "Specify a target:\nmake rbp2\nmake rbp4\nmake vero3"
+	@echo "Specify a target:\nmake rbp2\nmake rbp4\nmake vero3\nmake appletv"
 
 rbp2:
 	sudo bash build.sh "rbp2"
@@ -9,6 +9,9 @@ rbp4:
 
 vero3:
 	sudo bash build.sh "vero3"
+
+appletv:
+	sudo bash build.sh "appletv"
 
 clean:
 	sudo rm -rf buildroot*/ > /dev/null 2>&1
