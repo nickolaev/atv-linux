@@ -27,6 +27,11 @@ bison
 flex
 libssl-dev"
 
+if [ "$1" == "appletv" ]
+then
+   packages="hfsprogs $packages"
+fi
+
 for package in $packages
 do
 	install_package $package
@@ -82,7 +87,7 @@ else
 fi
 if [ ! -f ../../../filesystem.tar.xz ]; then echo -e "No filesystem available for target" && exit 1; fi
 echo -e "Building disk image"
-if [ "$1" == "rbp2" ] || [ "$1" == "rbp4" ] || [ "$1" == "vero3" ]
+if [ "$1" == "rbp2" ] || [ "$1" == "rbp4" ] || [ "$1" == "vero3" ] || [ "$1" == "appletv" ]
 then
         size=320
         date=$(date +%Y%m%d)
@@ -93,6 +98,17 @@ then
 	/sbin/partprobe
 	mkfs.vfat -F32 /dev/mapper/loop0p1
 	fatlabel /dev/mapper/loop*p1 OSMCInstall
+	mount /dev/mapper/loop0p1 /mnt
+fi
+if [ "$1" == "appletv" ]
+then
+	dd if=/dev/zero of=OSMC_TGT_${1}_${date}.img bs=1M count=${size}
+	parted -s OSMC_TGT_${1}_${date}.img mklabel gpt
+	parted -s OSMC_TGT_${1}_${date}.img mkpart primary hfs+ 40s 256M
+	parted -s OSMC_TGT_${1}_${date}.img set 1 atvrecv on
+	kpartx -a OSMC_TGT_${1}_${date}.img
+	/sbin/partprobe
+	mkfs.hfsplus /dev/mapper/loop0p1
 	mount /dev/mapper/loop0p1 /mnt
 fi
 if [ "$1" == "rbp2" ] || [ "$1" == "rbp4" ]
@@ -130,6 +146,21 @@ then
             ../../output/build/linux-osmc-openlinux-4.9/scripts/mkbootimg --kernel Image.gz --base 0x0 --kernel_offset 0x1080000 --ramdisk rootfs.cpio.gz --second multi.dtb --output /mnt/kernel.img
 	fi
 	cp $DTB_FILE /mnt/dtb.img
+fi
+if [ "$1" == "appletv" ]
+then
+	echo -e "Installing AppleTV files"
+	mv com.apple.Boot.plist /mnt
+	sed -e "s:BOOTFLAGS:console=tty1 root=/dev/ram0 quiet init=/init loglevel=2 osmcdev=atv video=vesafb intel_idle.max_cstate=1 processor.max_cstate=2 nohpet:" -i /mnt/com.apple.Boot.plist
+	mv BootLogo.png /mnt
+	mv boot.efi /mnt
+	mv System /mnt
+	echo -e "Building mach_kernel" # Had to be done after kernel image was built
+	mv bzImage ../build/atv-bootloader-master/vmlinuz
+	pushd ../build/atv-bootloader-master
+	make
+	popd
+	mv ../build/atv-bootloader-master/mach_kernel /mnt
 fi
 echo -e "Installing filesystem"
 mv $(pwd)/../../../filesystem.tar.xz /mnt/
