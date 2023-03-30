@@ -27,6 +27,11 @@ bison
 flex
 libssl-dev"
 
+if true 
+then
+	packages="$packages gcc-9 g++-9"
+fi
+
 if [ "$1" == "appletv" ]
 then
    packages="hfsprogs $packages"
@@ -48,25 +53,40 @@ if [ "$SIGN_KERNEL" -eq 1 ]
                 if [ ! -f $SIG_FILE_AES ] || [ ! -f $SIG_FILES_AESIV ] || [ ! -f $SIG_FILE_KERNELKEY ]; then echo "Missing files needed for encrypting kernel image" && exit 1; fi
         fi
 
-pull_source "https://buildroot.uclibc.org/downloads/buildroot-${BUILDROOT_VERSION}.tar.gz" "."
-verify_action
-pushd buildroot-${BUILDROOT_VERSION}
-install_patch "../patches" "all"
-install_patch "../patches" "$1"
-if [ "$SIGN_KERNEL" -eq 1 ]
-then
-	install_patch "../patches" "signed-${1}"
-fi
-if [ "$1" == "rbp2" ] || [ "$1" == "rbp4" ]
-then
-	install_patch "../patches" "rbp"
-	sed s/rpi-firmware/rpi-firmware-osmc/ -i package/Config.in # Use our own firmware package
-	echo "dwc_otg.fiq_fix_enable=1 sdhci-bcm2708.sync_after_dma=0 dwc_otg.lpm_enable=0 console=tty1 root=/dev/ram0 quiet init=/init loglevel=2 osmcdev=${1}" > package/rpi-firmware-osmc/cmdline.txt
-fi
-make osmc_defconfig
+pushd ../../filesystem/osmc-${1}-filesystem/
+make clean
 make
-if [ $? != 0 ]; then echo "Build failed" && exit 1; fi
+date=$(date +%Y%m%d)
 popd
+yes | cp ../../filesystem/osmc-${1}-filesystem/osmc-${1}-filesystem-${date}.tar.xz filesystem.tar.xz
+
+if [ -d buildroot-${BUILDROOT_VERSION} ]
+then
+	echo -e "Using local buildroot"
+else
+	echo -e "Downloading buildroot ${BUILDROOT_VERSION}"
+	pull_source "https://buildroot.uclibc.org/downloads/buildroot-${BUILDROOT_VERSION}.tar.gz" "."
+	verify_action
+	pushd buildroot-${BUILDROOT_VERSION}
+	install_patch "../patches" "all"
+	install_patch "../patches" "$1"
+	if [ "$SIGN_KERNEL" -eq 1 ]
+	then
+		install_patch "../patches" "signed-${1}"
+	fi
+	if [ "$1" == "rbp2" ] || [ "$1" == "rbp4" ]
+	then
+		install_patch "../patches" "rbp"
+		sed s/rpi-firmware/rpi-firmware-osmc/ -i package/Config.in # Use our own firmware package
+		echo "dwc_otg.fiq_fix_enable=1 sdhci-bcm2708.sync_after_dma=0 dwc_otg.lpm_enable=0 console=tty1 root=/dev/ram0 quiet init=/init loglevel=2 osmcdev=${1}" > package/rpi-firmware-osmc/cmdline.txt
+	fi
+	HOSTCC=gcc-9 HOSTCXX=g++-9 make osmc_defconfig
+	HOSTCC=gcc-9 HOSTCXX=g++-9 make
+	if [ $? != 0 ]; then echo "Build failed" && exit 1; fi
+	popd
+	wget -O buildroot-${BUILDROOT_VERSION}.tar.gz https://buildroot.uclibc.org/downloads/buildroot-${BUILDROOT_VERSION}.tar.gz
+fi
+
 pushd buildroot-${BUILDROOT_VERSION}/output/images
 if [ -f ../../../filesystem.tar.xz ]
 then
@@ -87,21 +107,11 @@ else
 fi
 if [ ! -f ../../../filesystem.tar.xz ]; then echo -e "No filesystem available for target" && exit 1; fi
 echo -e "Building disk image"
-if [ "$1" == "rbp2" ] || [ "$1" == "rbp4" ] || [ "$1" == "vero3" ] || [ "$1" == "appletv" ]
-then
-        size=320
-        date=$(date +%Y%m%d)
-	dd if=/dev/zero of=OSMC_TGT_${1}_${date}.img bs=1M count=${size} conv=sparse
-	parted -s OSMC_TGT_${1}_${date}.img mklabel msdos
-	parted -s OSMC_TGT_${1}_${date}.img mkpart primary fat32 4Mib 100%
-	kpartx -s -a OSMC_TGT_${1}_${date}.img
-	/sbin/partprobe
-	mkfs.vfat -F32 /dev/mapper/loop0p1
-	fatlabel /dev/mapper/loop*p1 OSMCInstall
-	mount /dev/mapper/loop0p1 /mnt
-fi
+
 if [ "$1" == "appletv" ]
 then
+	size=320
+	date=$(date +%Y%m%d)
 	dd if=/dev/zero of=OSMC_TGT_${1}_${date}.img bs=1M count=${size}
 	parted -s OSMC_TGT_${1}_${date}.img mklabel gpt
 	parted -s OSMC_TGT_${1}_${date}.img mkpart primary hfs+ 40s 256M
@@ -110,45 +120,7 @@ then
 	/sbin/partprobe
 	mkfs.hfsplus /dev/mapper/loop0p1
 	mount /dev/mapper/loop0p1 /mnt
-fi
-if [ "$1" == "rbp2" ] || [ "$1" == "rbp4" ]
-then
-	echo -e "Installing Pi files"
-	mv zImage /mnt/kernel.img
-	mv INSTALLER/* /mnt
-	mv *.dtb /mnt
-	mv overlays /mnt
-	if [ "$1" == "rbp4" ]
-	then
-		rm /mnt/*rpi-b*.dtb
-		rm /mnt/*rpi-*3*.dtb
-		rm /mnt/*rpi-*2*.dtb
-		rm /mnt/bcm2835*.dtb
-		rm /mnt/bcm2708*.dtb
-	fi
-	if [ "$1" == "rbp2" ]
-	then
-		rm /mnt/bcm2711-rpi-*.dtb
-	fi
-fi
-if [ "$1" == "vero3" ]
-then
-	echo -e "Installing Vero 3 files"
-	    ../.././output/build/linux-osmc-openlinux-4.9/scripts/multidtb/multidtb -o multi.dtb --dtc-path $(pwd)/../../output/build/linux-osmc-openlinux-4.9/scripts/dtc/ $(pwd)/../../output/build/linux-osmc-openlinux-4.9/arch/arm64/boot/dts/amlogic --verbose --page-size 2048
-	DTB_FILE="multi.dtb"
-        if [ "$SIGN_KERNEL" -eq 1 ]
-        then
-            DTB_FILE="multi.dtb.encrypted"
-	    ../.././output/build/linux-osmc-openlinux-4.9/scripts/amlogic/stool/sign.sh --sign-kernel -i multi.dtb -k $SIG_FILE_KERNELKEY -a $SIG_FILE_AES --iv $SIG_FILE_AESIV -o multi.dtb.encrypted || true
-            ../.././output/build/linux-osmc-openlinux-4.9/scripts/mkbootimg --kernel Image.gz --pagesize 2048 --header_version 1 --base 0x0 --kernel_offset 0x1080000 --ramdisk rootfs.cpio.gz --second multi.dtb --output kernel.img
-            ../.././output/build/linux-osmc-openlinux-4.9/scripts/amlogic/stool/sign.sh --sign-kernel -i kernel.img -k $SIG_FILE_KERNELKEY -a $SIG_FILE_AES --iv $SIG_FILE_AESIV -o /mnt/kernel.img || true
-	else
-            ../../output/build/linux-osmc-openlinux-4.9/scripts/mkbootimg --kernel Image.gz --base 0x0 --kernel_offset 0x1080000 --ramdisk rootfs.cpio.gz --second multi.dtb --output /mnt/kernel.img
-	fi
-	cp $DTB_FILE /mnt/dtb.img
-fi
-if [ "$1" == "appletv" ]
-then
+
 	echo -e "Installing AppleTV files"
 	mv com.apple.Boot.plist /mnt
 	sed -e "s:BOOTFLAGS:console=tty1 root=/dev/ram0 quiet init=/init loglevel=2 osmcdev=atv video=vesafb intel_idle.max_cstate=1 processor.max_cstate=2 nohpet:" -i /mnt/com.apple.Boot.plist
