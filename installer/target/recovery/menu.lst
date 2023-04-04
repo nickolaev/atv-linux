@@ -1,0 +1,7 @@
+default 0
+timeout 3
+title Linux
+root (hd1,2)
+kernel /vmlinuz root=/dev/sdb3 ro vesa video=vesafb
+initrd /initrd.img
+boot
