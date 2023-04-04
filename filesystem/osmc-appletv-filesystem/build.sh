@@ -56,29 +56,12 @@ echo -e "Updating sources"
 chroot ${DIR} apt-get update
 chroot ${DIR} apt-get full-upgrade -y
 verify_action
-chroot ${DIR} apt-get -y install --no-install-recommends systemd-sysv
+chroot ${DIR} apt-get -y install tasksel linux-image-686
 verify_action
-echo -e "Installing core packages"
-# We have to set up userland first for kernel postinst rules
-make -C ../../package/atv-userland-osmc
-cp ../../package/atv-userland-osmc/*.deb ${DIR}/tmp
-chroot ${DIR} dpkg -i /tmp/atv-userland-osmc*.deb
-rm ${DIR}/tmp/atv-userland-osmc*.deb
+chroot ${DIR} tasksel install ssh-server
 verify_action
-# We have to set up bootloader first for mach_kernel build abilities
-make -C ../../package/atv-bootloader-osmc
-cp ../../package/atv-bootloader-osmc/*.deb ${DIR}/tmp
-chroot ${DIR} dpkg -i /tmp/atv-bootloader-osmc*.deb
-rm ${DIR}/tmp/atv-bootloader-osmc*.deb
-verify_action
-make -C ../../package/atv-device-osmc
-cp ../../package/atv-device-osmc/*.deb ${DIR}/tmp
-chroot ${DIR} dpkg -i /tmp/atv-device-osmc*.deb
-rm ${DIR}/tmp/atv-device-osmc*.deb
-verify_action
-# We have SSH separate so we can remove it later via App Store
-chroot ${DIR} apt-get -y install --no-install-recommends openssh-server
-verify_action
+chroot ${DIR} dpkg-reconfigure locales
+
 echo -e "Configuring environment"
 echo -e "	* Adding user osmc"
 setup_osmc_user ${DIR}
@@ -95,9 +78,7 @@ verify_action
 echo -e "	* Configuring TTYs"
 conf_tty ${DIR}
 verify_action
-echo -e "	* Configuring BusyBox symlinks"
-setup_busybox_links ${DIR}
-verify_action
+
 
 # Perform filesystem cleanup
 chroot ${DIR} umount /proc

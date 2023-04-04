@@ -32,13 +32,13 @@ function setup_osmc_user()
 
 function setup_hostname()
 {
-	echo "osmc" > ${1}/etc/hostname
+	echo "appletv" > ${1}/etc/hostname
 }
 
 function setup_hosts()
 {
-	echo "::1             osmc localhost6.localdomain6 localhost6
-127.0.1.1       osmc
+	echo "::1             appletv localhost6.localdomain6 localhost6
+127.0.1.1       appletv
 
 
 127.0.0.1       localhost
