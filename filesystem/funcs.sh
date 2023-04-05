@@ -8,7 +8,7 @@
 function setup_osmc_user()
 {
 	# Sets user and password to 'osmc'
-	chroot ${1} useradd -p \$y\$j9T\$YO0bsdRQoKHvOxZPFBn5q/\$D5DzjNAvfOy.ftwO5IE2FkbrZNsC2DtiNZO9Q5.9UF1 osmc -k /etc/skel -d /home/osmc -m -s /bin/bash
+	chroot ${1} useradd -p \$y\$j9T\$YO0bsdRQoKHvOxZPFBn5q/\$D5DzjNAvfOy.ftwO5IE2FkbrZNsC2DtiNZO9Q5.9UF1 debian -k /etc/skel -d /home/debian -m -s /bin/bash
 	# Locks root
 	chroot ${1} passwd -l root
 	# Makes 'osmc' username and password never expire
@@ -59,92 +59,13 @@ function create_fs_tarball()
 	rm -rf ${1}
 }
 
-function disable_init()
-{
-	echo "exit 101" >${1}/usr/sbin/policy-rc.d
-	chmod 0755 ${1}/usr/sbin/policy-rc.d
-}
-
-function enable_init()
-{
-	rm ${1}/usr/sbin/policy-rc.d
-}
-
 function create_base_fstab()
 {
 	>${1}/etc/fstab
-}
-
-function conf_tty()
-{
-	chroot ${1} systemctl disable getty\@tty1.service
-}
-
-function setup_busybox_links()
-{
-	if [ -f ${1}/bin/busybox ]
-	then
-		chroot ${1} ln -s /bin/busybox /bin/vi
-		chroot ${1} ln -s /bin/busybox /bin/ping
-		chroot ${1} ln -s /bin/busybox /bin/unzip
-		chroot ${1} ln -s /bin/busybox /bin/nc
-		chroot ${1} ln -s /bin/busybox /bin/traceroute
-		chroot ${1} chmod +s /bin/busybox
-	fi
-}
-
-function enable_legacy_elf()
-{
-	chroot ${1} ln -s /lib/arm-linux-gnueabihf/ld-linux.so.3 /lib/ld-linux.so.3
-}
-
-function create_rc_local()
-{
-	cat <<EOF >${1}/etc/rc.local
-#!/bin/sh -e
-#
-# rc.local
-#
-# This script is executed at the end of each multiuser runlevel.
-# Make sure that the script will "exit 0" on success or any other
-# value on error.
-#
-# In order to enable or disable this script just change the execution
-# bits.
-#
-# By default this script does nothing.
-
-exit 0
-EOF
-
-chmod +x ${1}/etc/rc.local
-
-}
-
-function set_iptables_to_legacy()
-{
-	chroot ${1} /usr/bin/update-alternatives --set iptables /usr/sbin/iptables-legacy
-	chroot ${1} /usr/bin/update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
-}
-
-function add_rls_info()
-{
-debootstrap_version=$(debootstrap --version | awk {'print $2'})
-build_date=$(date)
-hostname=$(hostname)
-echo -e "OSMC filesystem assembled on ${hostname} at ${build_date} using Debootstrap version ${debootstrap_version}" > ${1}/etc/osmc_build_info
 }
 
 export -f setup_osmc_user
 export -f setup_hostname
 export -f setup_hosts
 export -f create_fs_tarball
-export -f disable_init
-export -f enable_init
 export -f create_base_fstab
-export -f conf_tty
-export -f setup_busybox_links
-export -f enable_legacy_elf
-export -f create_rc_local
-export -f set_iptables_to_legacy
-export -f add_rls_info

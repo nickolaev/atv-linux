@@ -1,7 +1,7 @@
 default 0
 timeout 3
 title Linux
-root (hd1,2)
-kernel /vmlinuz root=/dev/sdb3 rw net.ifnames=0 vesa video=vesafb earlyprintk=efi intel_idle.max_cstate=1 processor.max_cstate=2 nohpet
+root (hd1,1)
+kernel /vmlinuz root=/dev/sdb2 rw net.ifnames=0 vesa video=vesafb earlyprintk=efi intel_idle.max_cstate=1 processor.max_cstate=2 nohpet
 initrd /initrd.img
 boot
