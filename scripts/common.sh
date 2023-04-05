@@ -139,8 +139,8 @@ function configure_filesystem()
 function cleanup_filesystem()
 {
 	echo -e "Cleaning up filesystem"
-	rm -f ${1}/etc/resolv.conf
-	rm -f ${1}/etc/network/interfaces
+	# rm -f ${1}/etc/resolv.conf
+	# rm -f ${1}/etc/network/interfaces
 	rm -rf ${1}/usr/share/man/*
 	rm -rf ${1}/var/lib/apt/lists/*
 	rm -f ${1}/var/log/*.log

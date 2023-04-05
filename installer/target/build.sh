@@ -46,14 +46,14 @@ yes | cp ../../filesystem/osmc-${1}-filesystem/osmc-${1}-filesystem-${date}.tar.
 if [ ! -f filesystem.tar.xz ]; then echo -e "No filesystem available for target" && exit 1; fi
 echo -e "Building disk image"
 
-size=2048
+size=1024
 disk=OSMC_TGT_${1}_${date}.img
 dd if=/dev/zero of=${disk} bs=1M count=${size}
 parted -a optimal -s ${disk} mklabel gpt
-parted -a optimal -s ${disk} mkpart primary hfs+ 1 33 name 1 recovery
+parted -a optimal -s ${disk} mkpart primary hfs+ 40s 32M name 1 recovery
 parted -a optimal -s ${disk} set 1 atvrecv on
-parted -a optimal -s ${disk} mkpart primary ext2 33 289 name 2 boot
-parted -a optimal -s ${disk} mkpart primary ext4 289 100% name 3 root
+parted -a optimal -s ${disk} mkpart primary ext2 32M 256M name 2 boot
+parted -a optimal -s ${disk} mkpart primary ext4 256M 100% name 3 root
 
 # Make file systems on partitions
 LOOPDEV=$(losetup --find --partscan --show ${disk})
@@ -73,11 +73,11 @@ mount "${LOOPDEV}p3" mnt/root
 
 echo -e "Installing AppleTV files"
 cp recovery/com.apple.Boot.plist mnt/recovery
-sed -e "s:BOOTFLAGS:console=tty1 root=/dev/ram0 quiet init=/init loglevel=2 video=vesafb intel_idle.max_cstate=1 processor.max_cstate=2 nohpet:" -i mnt/recovery/com.apple.Boot.plist
+# sed -e "s:BOOTFLAGS:console=tty1 root=/dev/ram0 quiet init=/init loglevel=2 video=vesafb intel_idle.max_cstate=1 processor.max_cstate=2 nohpet:" -i mnt/recovery/com.apple.Boot.plist
 cp recovery/BootLogo.png mnt/recovery
 cp recovery/boot.efi mnt/recovery
-# cp recovery/System mnt/recovery
 cp recovery/mach_kernel mnt/recovery
+cp -r recovery/System mnt/recovery
 
 echo -e "Installing filesystem"
 tar -xJf filesystem.tar.xz -C mnt/root
@@ -85,13 +85,19 @@ tar -xJf filesystem.tar.xz -C mnt/root
 echo -e "Installing kernel"
 cp mnt/root/boot/vmlinuz* mnt/boot/vmlinuz
 cp mnt/root/boot/initrd.img* mnt/boot/initrd.img
-cp recovery/menu.lst mnt/boot
-sync
+mkdir mnt/boot/grub
+cp recovery/menu.lst mnt/boot/grub
+cp recovery/eth0 mnt/root/etc/network/interfaces.d/eth0
 
 # Unmount partitions and detach loop device
 umount mnt/recovery
 umount mnt/boot
 umount mnt/root
+fsck -fy "${LOOPDEV}p1"
+fsck -fy "${LOOPDEV}p2"
+fsck -fy "${LOOPDEV}p3"
+parted -s ${disk} print
 losetup -d "${LOOPDEV}"
+rm -rf mnt
 
 echo -e "Build completed"

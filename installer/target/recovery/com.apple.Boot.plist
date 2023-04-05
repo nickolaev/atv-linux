@@ -11,6 +11,6 @@
         <key>Kernel</key>
         <string>mach_kernel</string>
         <key>Kernel Flags</key>
-        <string>atv-boot=auto video=vesafb</string>
+        <string>atv-boot=auto vesa video=vesafb earlyprintk=efi</string>
 </dict>
 </plist>
