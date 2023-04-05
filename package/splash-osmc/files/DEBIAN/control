@@ -1,7 +1,0 @@
-Origin: OSMC
-Version: 1.3.8
-Section: utils
-Essential: No
-Priority: required
-Maintainer: Sam G Nazarko <email@samnazarko.co.uk>
-Description: Splash screen implementation for OSMC using ply-lite

@@ -34,14 +34,14 @@ done
 
 if [ ! -f filesystem.tar.xz ]
 then
-	pushd ../../filesystem/osmc-${1}-filesystem/
+	pushd ../../filesystem/
 	make clean
 	make
 	popd
 fi
 
 date=$(date +%Y%m%d)
-yes | cp ../../filesystem/osmc-${1}-filesystem/osmc-${1}-filesystem-${date}.tar.xz filesystem.tar.xz
+yes | cp ../../filesystem/osmc-${1}-filesystem-${date}.tar.xz filesystem.tar.xz
 
 if [ ! -f filesystem.tar.xz ]; then echo -e "No filesystem available for target" && exit 1; fi
 echo -e "Building disk image"

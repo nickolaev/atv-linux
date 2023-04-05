@@ -1,8 +1,0 @@
-Origin: OSMC
-Version: 0.1.10
-Section: libs
-Essential: No
-Priority: optional
-Depends: libavahi-compat-libdnssd1
-Maintainer: Sam G Nazarko <email@samnazarko.co.uk>
-Description: libshairplay package

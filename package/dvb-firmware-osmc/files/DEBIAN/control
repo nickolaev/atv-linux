@@ -1,9 +1,0 @@
-Origin: OSMC
-Package: dvb-firmware-osmc
-Version: 1.0.5
-Section: video
-Essential: No
-Priority: extra
-Architecture: all
-Maintainer: Sam G Nazarko <email@samnazarko.co.uk>
-Description: DVB firmware (proprietary) for OSMC

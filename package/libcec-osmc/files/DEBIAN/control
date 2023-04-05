@@ -1,8 +1,0 @@
-Origin: OSMC
-Version: 6.0.2-5
-Section: libs
-Essential: No
-Priority: optional
-Maintainer: Sam G Nazarko <email@samnazarko.co.uk>
-Description: libcec
-Depends: libp8-platform2

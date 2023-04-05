@@ -1,5 +1,0 @@
-#!/bin/bash
-
-if [ "$1" = "remove" ]; then
-	exit 0
-fi

@@ -1,9 +1,0 @@
-Origin: OSMC
-Package: perftune-osmc
-Version: 1.3.0
-Section: admin
-Essential: No
-Priority: required
-Architecture: all
-Maintainer: Sam G Nazarko <email@samnazarko.co.uk>
-Description: Performance tuning tweaks for OSMC

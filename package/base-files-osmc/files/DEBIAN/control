@@ -1,9 +1,0 @@
-Origin: OSMC
-Package: base-files-osmc
-Version: 3.2.4
-Section: admin
-Priority: required
-Architecture: all
-Maintainer: Sam G Nazarko <email@samnazarko.co.uk>
-Description: modified base-files for OSMC system
-Conflicts: plymouth

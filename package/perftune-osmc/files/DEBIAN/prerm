@@ -1,6 +1,0 @@
-#!/bin/bash
-if [ "$1" = "remove" ]; then
-	systemctl disable performance.service >/dev/null 2>&1
-	systemctl stop performance.service
-	exit 0
-fi

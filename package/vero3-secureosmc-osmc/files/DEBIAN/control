@@ -1,9 +1,0 @@
-Origin: OSMC
-Package: vero3-secureosmc-osmc
-Version: 1.5.0-2
-Section: libs
-Essential: No
-Priority: required
-Architecture: armhf
-Maintainer: Sam G Nazarko <email@samnazarko.co.uk>
-Description: Vero 3 secureOSMC integration package

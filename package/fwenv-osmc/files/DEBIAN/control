@@ -1,7 +1,0 @@
-Origin: OSMC
-Version: 2016.01-5
-Section: video
-Essential: No
-Priority: optional
-Maintainer: Sam G Nazarko <email@samnazarko.co.uk>
-Description: firmware tools for OSMC

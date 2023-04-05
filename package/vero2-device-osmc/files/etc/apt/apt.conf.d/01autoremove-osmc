@@ -1,8 +1,0 @@
-APT
-{
-  OSMCKernelPackages
-  {
-	"vero2-image";
-	"vero2-headers";
-  };
-};

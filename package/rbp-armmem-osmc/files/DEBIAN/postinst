@@ -1,9 +1,0 @@
-#!/bin/bash
-
-
-if [ "$1" = "configure" ] && [ -e "/var/run/${DPKG_MAINTSCRIPT_PACKAGE}_install" ]; then
-	rm -f "/var/run/${DPKG_MAINTSCRIPT_PACKAGE}_install"
-	if ischroot; then exit 0; fi
-	if [ -e /etc/ld.so.preload ]; then sed '/^\/usr\/lib\/libarmmem.so$/d' -i /etc/ld.so.preload; fi
-	echo "/usr/lib/libarmmem.so" >> /etc/ld.so.preload
-fi

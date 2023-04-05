@@ -1,7 +1,0 @@
-Origin: OSMC
-Version: 3.28.0-4
-Section: libs
-Essential: No
-Priority: optional
-Maintainer: Sam G Nazarko <email@samnazarko.co.uk>
-Description: libsqlite optimised for Kodi

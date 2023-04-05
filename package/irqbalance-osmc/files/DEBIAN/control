@@ -1,7 +1,0 @@
-Origin: OSMC
-Version: 1.0.8-9
-Section: utils
-Essential: No
-Priority: optional
-Maintainer: Sam G Nazarko <email@samnazarko.co.uk>
-Description: irqbalance for OSMC

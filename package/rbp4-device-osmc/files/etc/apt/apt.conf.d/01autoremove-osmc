@@ -1,8 +1,0 @@
-APT
-{
-  OSMCKernelPackages
-  {
-	"rbp4-image";
-	"rbp4-headers";
-  };
-};

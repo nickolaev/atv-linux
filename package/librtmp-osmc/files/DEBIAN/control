@@ -1,8 +1,0 @@
-Origin: OSMC
-Version: 2.4.0-13
-Section: libs
-Essential: No
-Priority: optional
-Depends: libssl1.1
-Maintainer: Sam G Nazarko <email@samnazarko.co.uk>
-Description: librtmp library

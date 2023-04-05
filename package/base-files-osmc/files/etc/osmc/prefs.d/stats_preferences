@@ -1,2 +1,0 @@
-# Automatically send anonymous installation information for statistics
-export OSMC_REPORT_STATS=1

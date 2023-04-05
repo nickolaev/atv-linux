@@ -1,2 +1,0 @@
-# Automatically purge old kernels when OSMC is updated
-export OSMC_KERNEL_AUTOREMOVE=1

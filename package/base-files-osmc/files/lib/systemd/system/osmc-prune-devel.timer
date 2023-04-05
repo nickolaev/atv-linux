@@ -1,9 +1,0 @@
-[Unit]
-Description=Timer to prune devel source
-
-[Timer]
-OnBootSec=1m
-OnUnitActiveSec=1d
-
-[Install]
-WantedBy=timers.target
