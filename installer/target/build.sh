@@ -40,14 +40,13 @@ then
 	popd
 fi
 
-date=$(date +%Y%m%d)
-yes | cp ../../filesystem/osmc-${1}-filesystem-${date}.tar.xz filesystem.tar.xz
+yes | cp ../../filesystem/debian-appletv-filesystem.tar.xz filesystem.tar.xz
 
 if [ ! -f filesystem.tar.xz ]; then echo -e "No filesystem available for target" && exit 1; fi
 echo -e "Building disk image"
 
 size=3800
-disk=OSMC_TGT_${1}_${date}.img
+disk=atv-linux.img
 dd if=/dev/zero of=${disk} bs=1M count=${size}
 parted -a optimal -s ${disk} mklabel gpt
 parted -a optimal -s ${disk} mkpart primary hfs+ 40s 32M name 1 recovery

@@ -5,7 +5,7 @@
 
 . funcs.sh
 wd=$(pwd)
-filestub="osmc-appletv-filesystem"
+filestub="debian-appletv-filesystem"
 
 check_platform
 verify_action
@@ -44,6 +44,8 @@ deb http://deb.debian.org/debian $RLS main contrib non-free
 
 deb http://deb.debian.org/debian/ $RLS-updates main contrib non-free
 
+deb http://deb.debian.org/debian/ $RLS-backports main contrib non-free
+
 deb http://deb.debian.org/debian-security $RLS-security main contrib non-free
 " > ${DIR}/etc/apt/sources.list
 
@@ -58,8 +60,8 @@ chroot ${DIR} apt-get install -y linux-image-686 sudo ifupdown parted xz-utils v
 verify_action
 
 echo -e "Configuring environment"
-echo -e "	* Adding user osmc"
-setup_osmc_user ${DIR}
+echo -e "	* Adding user debian"
+setup_debian_user ${DIR}
 verify_action
 echo -e "	* Setting hostname"
 setup_hostname ${DIR}
