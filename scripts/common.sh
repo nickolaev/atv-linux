@@ -1,7 +1,7 @@
+#!/bin/bash
+
 # (c) 2014-2015 Sam Nazarko
 # email@samnazarko.co.uk
-
-#!/bin/bash
 
 function check_platform()
 {
@@ -17,71 +17,6 @@ function verify_action()
 {
 	code=$?
 	if [ $code != 0 ]; then echo -e "Exiting build with return code ${code}" && exit 1; fi
-}
-
-function configure_build_env_nw()
-{
-        if [ -f "/etc/resolv.conf" ]
-        then
-                echo -e "Installing /etc/resolv.conf"
-                cp /etc/resolv.conf ${1}/etc/resolv.conf
-        fi
-        if [ -f "/etc/network/interfaces" ]
-        then
-                echo -e "Installing /etc/network/interfaces"
-		mkdir -p ${1}/etc/network
-                cp /etc/network/interfaces ${1}/etc/network/interfaces
-        fi
-        HOSTNAME=$(cat /etc/hostname)
-        echo "127.0.0.1 $HOSTNAME" > ${1}/etc/hosts
-}
-
-function add_apt_key()
-{
-	echo -e "Adding apt key"
-	wget ${2} -O ${1}/tmp/key
-	chroot ${1} apt-key add /tmp/key
-	verify_action
-	rm ${1}/tmp/key > /dev/null 2>&1
-}
-
-function add_apt_key_gpg()
-{
-	echo -e "Adding apt key to trusted.gpg.d"
-	wget ${2} -O ${1}/etc/apt/trusted.gpg.d/${3}
-	verify_action
-}
-
-function inject_tls_patch()
-{
-	echo -e "Fixing TLS patch"
-	echo 'Acquire::https::Verify-Peer "false";' > ${1}/etc/apt/apt.conf.d/999-osmc-ignore-tls
-}
-
-function remove_tls_patch()
-{
-	echo -e "Removing TLS patch"
-	rm ${1}/etc/apt/apt.conf.d/999-osmc-ignore-tls
-}
-
-function emulate_arm()
-{
-	echo Copying ARM QEMU binary
-	if [ "$2" == "32" ]; then ARM_EMULATOR="qemu-arm-static"; fi
-	if [ "$2" == "64" ]; then ARM_EMULATOR="qemu-aarch64-static"; fi
-	# Default to 32-bit
-	if [ -z "$2" ]; then ARM_EMULATOR="qemu-arm-static"; fi
-	cp /usr/bin/${ARM_EMULATOR} ${1}/usr/bin/${ARM_EMULATOR}
-}
-
-function remove_emulate_arm()
-{
-	echo Removing ARM QEMU binary
-        if [ "$2" == "32" ]; then ARM_EMULATOR="qemu-arm-static"; fi
-        if [ "$2" == "64" ]; then ARM_EMULATOR="qemu-aarch64-static"; fi
-        # Default to 32-bit
-        if [ -z "$2" ]; then ARM_EMULATOR="qemu-arm-static"; fi
-	rm ${1}/usr/bin/${ARM_EMULATOR}
 }
 
 function update_sources()
@@ -154,128 +89,10 @@ function remove_existing_filesystem()
 	if [ -d "$1" ]; then echo -e "Removing old filesystem" && rm -rf "$1"; fi
 }
 
-function install_patch()
-{
-	patches=$(find ${1} -name "${2}-*.patch" -printf '%P\n' | sort)
-	for patch in $patches
-	do
-		cp ${1}/$patch .
-		echo Applying patch $patch
-		if ! grep -q "GIT binary patch" $patch
-		then
-		    patch -p1 --ignore-whitespace < $patch
-		    verify_action
-	        else
-		    # this is a binary patch
-		    install_package "git"
-		    verify_action
-		    prefix=$(realpath --relative-to="$(git rev-parse --show-toplevel)" .)
-		    git apply --whitespace=nowarn --directory="$prefix" $patch
-		    verify_action
-	        fi
-	        rm $patch
-	done
-}
-
-function pull_source()
-{
-	ischroot
-	chrootval=$?
-	if [ $chrootval == 2 ] || [ $chrootval == 0 ]; then return; fi # Prevent recursive loop
-	if ! command -v unzip >/dev/null 2>&1; then update_sources && verify_action && install_package "unzip" && verify_action; fi
-	if ! command -v bunzip2 >/dev/null 2>&1; then update_sources && verify_action && install_package "bzip2" && verify_action; fi
-	if ! command -v git >/dev/null 2>&1; then update_sources && verify_action && install_package "git" && verify_action; fi
-	if ! command -v svn >/dev/null 2>&1; then update_sources && verify_action && install_package "subversion" && verify_action; fi
-	if ! command -v wget >/dev/null 2>&1; then update_sources && verify_action && install_package "wget" && verify_action; fi
-	if ! command -v xz >/dev/null 2>&1; then update_sources && verify_action && install_package "xz-utils" && verify_action; fi
-	if [ -d ${2} ]
-	then
-		if [ "$2" != "." ]
-		then
-			echo "Cleaning old source" && rm -rf ${2}; fi
-		fi
-	if [[ $1 =~ \.zip$ ]]
-	then
-	echo -e "Detected ZIP source"
-	if [ "$2" != "." ]; then mkdir -p ${2}; fi
-	wget ${1} -O source.zip
-	if [ $? != 0 ]; then echo "Downloading zip failed" && exit 1; fi
-	unzip source.zip -d ${2}
-	rm source.zip
-	return
-	fi
-
-	if [[ $1 =~ \.tar$ || $1 =~ \.tgz$ || $1 =~ \.tar\.gz$ || $1 =~ \.tar\.bz2$ || $1 =~ \.tar\.xz$ ]]
-	then
-	echo -e "Detected tarball source"
-	if [ "$2" != "." ]; then mkdir -p ${2}; fi
-	wget ${1} -O source.tar
-	if [ $? != 0 ]; then echo "Downloading tarball failed" && exit 1; fi
-	tar -xvf source.tar -C ${2}
-	rm source.tar
-	return
-	fi
-
-	if [[ $1 =~ svn ]]
-	then
-	echo -e "Detected SVN source"
-	svn co ${1} ${2}
-	if [ $? != 0 ]; then echo "Source checkout failed" && exit 1; fi
-	return
-	fi
-
-	if [[ $1 =~ git ]]
-	then
-	echo -e "Detected Git source"
-	git clone ${1} ${2}
-	if [ $? != 0 ]; then echo "Source checkout failed" && exit 1; fi
-	if [ ! -z $3 ]
-	then
-	    pushd ${2}
-	    git reset --hard ${3}
-	    popd
-	fi
-	return
-	fi
-
-	echo -e "No file type match found for URL" && exit 1
-}
-
-function pull_bin()
-{
-	ischroot
-	chrootval=$?
-	if [ $chrootval == 2 ] || [ $chrootval == 0 ]; then return; fi # Prevent recursive loop
-	if ! command -v wget >/dev/null 2>&1; then update_sources && verify_action && install_package "wget" && verify_action; fi
-	if [ -f $2 ]; then echo "Cleaning old source" && rm -f ${2}; fi
-	wget ${1} -O ${2}
-	if [ $? != 0 ]; then echo "Binary download failed" && exit 1; fi
-	chmod +x ${2}
-}
-
-if [ -z $DOWNLOAD_URL ]
-then
-	#DOWNLOAD_URL=$(env LANG=C wget -S --spider --timeout 60 https://download.osmc.tv 2>&1 > /dev/null | grep "^Location:" | cut -f 2 -d ' ')
-	DOWNLOAD_URL="https://download.osmc.tv"
-	export DOWNLOAD_URL
-fi
-
-cores=$(if [ ! -f /proc/cpuinfo ]; then mount -t proc proc /proc; fi; getconf _NPROCESSORS_ONLN && umount /proc > /dev/null 2>&1)
-export BUILD="make -j${cores}"
-
 export -f check_platform
 export -f verify_action
-export -f configure_build_env_nw
-export -f add_apt_key
-export -f emulate_arm
-export -f inject_tls_patch
-export -f remove_tls_patch
-export -f remove_emulate_arm
 export -f update_sources
 export -f install_package
 export -f fetch_filesystem
 export -f cleanup_filesystem
 export -f remove_existing_filesystem
-export -f install_patch
-export -f pull_source
-export -f pull_bin

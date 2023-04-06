@@ -1,9 +1,9 @@
+#!/bin/bash
+
 # (c) 2014-2015 Sam Nazarko
 # email@samnazarko.co.uk
 
-#!/bin/bash
-
-. ../../scripts/common.sh
+. ../scripts/common.sh
 
 echo -e "Installing dependencies"
 update_sources
@@ -28,21 +28,18 @@ hfsprogs"
 for package in $packages
 do
 	echo -e "Installing $package"
-#	install_package $package
-#	verify_action
+	install_package $package
+	verify_action
 done
 
 if [ ! -f filesystem.tar.xz ]
 then
-	pushd ../../filesystem/
+	pushd ../filesystem/
 	make clean
 	make
 	popd
 fi
 
-yes | cp ../../filesystem/debian-appletv-filesystem.tar.xz filesystem.tar.xz
-
-if [ ! -f filesystem.tar.xz ]; then echo -e "No filesystem available for target" && exit 1; fi
 echo -e "Building disk image"
 
 size=3800
@@ -79,8 +76,8 @@ cp recovery/mach_kernel mnt/recovery
 cp -r recovery/System mnt/recovery
 
 echo -e "Installing filesystem"
-tar -xJf filesystem.tar.xz -C mnt/root
-cp filesystem.tar.xz mnt/root/root
+tar -xJf cp -f ../filesystem/debian-appletv-filesystem.tar.xz -C mnt/root
+cp ../filesystem/debian-appletv-filesystem.tar.xz mnt/root/root
 
 echo -e "Installing kernel"
 # cp mnt/root/boot/vmlinuz* mnt/boot/vmlinuz
