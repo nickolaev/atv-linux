@@ -46,12 +46,14 @@ ff02::2         ip6-allrouters">${1}/etc/hosts
 
 function create_fs_tarball()
 {
-	echo -e "Creating filesystem tarball"
-	pushd ${1}
-	tar -cf - * | xz -9 -c - > ../${2}.tar.xz
-	echo $(md5sum ../${2}.tar.xz | cut -f 1 -d ' ') filesystem.tar.xz > ../${2}.md5
-	popd
-	rm -rf ${1}
+    echo -e "Creating filesystem tarball"
+    local root=$1 name=$2
+    if ! (set -o pipefail; cd "$root" && tar -cf - . | xz -9 -c > "../${name}.tar.xz"); then
+        rm -f "${name}.tar.xz"
+        return 1
+    fi
+    md5sum "${name}.tar.xz" > "${name}.md5" || return 1
+    rm -rf -- "$root"
 }
 
 function create_base_fstab()
