@@ -20,8 +20,6 @@ The root partition is labeled `ATVTESTROOT`, so avoid attaching multiple copies 
 
 ```sh
 bash -n scripts/common.sh filesystem/*.sh image/build.sh
-bash tests/test-filesystem.sh
-bash tests/test-image-failure.sh
 ```
 
 A Debian 12 image built from the legacy boot chain was reported to boot on first-generation Apple TV hardware. The exact hardware-tested build used a container-specific keyring and other temporary build fixes; the portable scripts should also be rebuilt and tested on target hardware. Multi-OS live boot and installation are not implemented.
