@@ -16,19 +16,23 @@ verify_action
 # Install packages needed to build filesystem for building
 install_package "debootstrap"
 verify_action
+install_package "debian-archive-keyring"
+verify_action
+install_package "ca-certificates"
+verify_action
 
 # Configure the target directory
 ARCH="i386"
 DIR="$filestub/"
-RLS="bullseye"
+RLS="bookworm"
 
 # Remove existing build
-remove_existing_filesystem "{$wd}/{$DIR}"
+remove_existing_filesystem "${wd}/${DIR}"
 verify_action
 mkdir -p $DIR
 
 # Debootstrap (foreign)
-DEBOOTSTRAP_ARGS="--arch=${ARCH} --foreign ${RLS} ${DIR}"
+DEBOOTSTRAP_ARGS="--keyring=/usr/share/keyrings/debian-archive-keyring.gpg --arch=${ARCH} --foreign ${RLS} ${DIR}"
 DEBOOTSTRAP_ARGS="--variant=minbase ${DEBOOTSTRAP_ARGS}"
 DEBOOTSTRAP_ARGS="--components main,contrib,non-free ${DEBOOTSTRAP_ARGS}"
 fetch_filesystem "${DEBOOTSTRAP_ARGS}"
@@ -44,7 +48,6 @@ deb http://deb.debian.org/debian $RLS main contrib non-free
 
 deb http://deb.debian.org/debian/ $RLS-updates main contrib non-free
 
-deb http://deb.debian.org/debian/ $RLS-backports main contrib non-free
 
 deb http://deb.debian.org/debian-security $RLS-security main contrib non-free
 " > ${DIR}/etc/apt/sources.list
@@ -52,8 +55,14 @@ deb http://deb.debian.org/debian-security $RLS-security main contrib non-free
 # Performing chroot operation
 chroot ${DIR} mount -t proc proc /proc
 verify_action
+proc_mounted=1
+cleanup_proc() {
+    if [ "${proc_mounted:-0}" -eq 1 ]; then umount "${DIR}/proc" || true; fi
+}
+trap cleanup_proc EXIT
 echo -e "Updating sources"
 chroot ${DIR} apt-get update
+verify_action
 chroot ${DIR} apt-get full-upgrade -y
 verify_action
 chroot ${DIR} apt-get install -y linux-image-686 sudo ifupdown parted xz-utils vim openssh-server
@@ -75,6 +84,8 @@ verify_action
 
 # Perform filesystem cleanup
 chroot ${DIR} umount /proc
+verify_action
+proc_mounted=0
 cleanup_filesystem "${DIR}"
 
 # Create filesystem tarball

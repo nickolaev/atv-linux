@@ -68,6 +68,7 @@ function configure_filesystem()
 	return 0
 	else
 	echo -e "Filesystem configuration failed"
+	return 1
 	fi
 }
 
