@@ -16,6 +16,10 @@ The root partition is labeled `ATVTESTROOT`, so avoid attaching multiple copies 
 
 **Test image credentials:** the system creates a `debian` account with password `debian`, passwordless sudo, and an SSH server. Keep it off untrusted networks. Change credentials before any networked use; this image is not hardened for deployment.
 
+## Boot selection prototype
+
+The recovery boot script displays a console menu for Debian 12 and Alpine Linux 3.24. A USB keyboard is required. This is a menu-only prototype: after either choice, it displays the selection and waits; it does not boot either system yet. Power off the Apple TV to leave the menu. The menu runs in the bootloader’s embedded environment before its automatic disk scan. The image has not yet been tested with this menu on Apple TV hardware.
+
 ## Validation
 
 ```sh

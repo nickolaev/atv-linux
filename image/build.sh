@@ -90,7 +90,7 @@ cp recovery/com.apple.Boot.plist mnt/recovery
 # sed -e "s:BOOTFLAGS:console=tty1 root=/dev/ram0 quiet init=/init loglevel=2 video=vesafb intel_idle.max_cstate=1 processor.max_cstate=2 nohpet:" -i mnt/recovery/com.apple.Boot.plist
 cp recovery/BootLogo.png mnt/recovery
 cp recovery/boot.efi mnt/recovery
-cp recovery/mach_kernel mnt/recovery
+python3 embed_boot_menu.py recovery/mach_kernel recovery/boot-menu.sh mnt/recovery/mach_kernel
 cp -r recovery/System mnt/recovery
 
 echo -e "Installing filesystem"
