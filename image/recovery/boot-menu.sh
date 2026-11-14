@@ -2,15 +2,20 @@
 # Open the console explicitly for keyboard input and visible output.
 exec </dev/console >/dev/console 2>&1
 
-unmount_debian() {
+unmount_system() {
     if ! umount "$mountpoint"; then
         /sbin/kexec --unload || true
-        printf "Could not unmount the Debian partition. Power off to exit.\n"
+        printf 'Could not unmount the selected partition. Power off to exit.\n'
         while :; do sleep 3600; done
     fi
 }
 
-boot_debian() {
+boot_system() {
+    distribution=$1
+    target_label=$2
+    kernel=$3
+    initrd=$4
+    kernel_args=$5
     count=0
     device=
     sys_device=
@@ -22,54 +27,48 @@ boot_debian() {
         candidate=/dev/$name
         [ -b "$candidate" ] || continue
         label=$(/sbin/blkid -c /dev/null -s LABEL -o value "$candidate" 2>/dev/null) || continue
-        [ "$label" = ATVTESTROOT ] || continue
+        [ "$label" = "$target_label" ] || continue
         count=$((count + 1))
         device=$candidate
         sys_device=$path
     done
-
     if [ "$count" -ne 1 ]; then
-        printf 'Debian boot requires exactly one ATVTESTROOT partition (found %s).\n' "$count"
+        printf '%s boot requires exactly one %s partition (found %s).\n' "$distribution" "$target_label" "$count"
         return 1
     fi
     if [ ! -f "$sys_device/partition" ]; then
-        printf "The Debian filesystem is not on a partition; refusing to boot it.\n"
+        printf 'The selected filesystem is not on a partition; refusing to boot it.\n'
         return 1
     fi
-    resolved=$(readlink -f "$sys_device") || {
-        printf 'Cannot identify the Debian disk.\n'
-        return 1
-    }
+    resolved=$(readlink -f "$sys_device") || { printf 'Cannot identify the selected disk.\n'; return 1; }
     case "$resolved" in
         */usb[0-9]/*) ;;
-        *) printf 'The Debian partition is not on USB; refusing to boot it.\n'; return 1 ;;
+        *) printf 'The selected partition is not on USB; refusing to boot it.\n'; return 1 ;;
     esac
 
-    mountpoint=/mnt/atv-debian
+    mountpoint=/mnt/atv-system
     mkdir -p "$mountpoint" || return 1
     if ! mount -t ext3 -o ro "$device" "$mountpoint"; then
-        printf 'Could not mount the Debian partition read-only.\n'
+        printf 'Could not mount the selected partition read-only.\n'
         return 1
     fi
-    if [ ! -f "$mountpoint/vmlinuz" ] || [ ! -f "$mountpoint/initrd.img" ]; then
-        printf 'Debian kernel or initramfs is missing.\n'
-        unmount_debian
+    if [ ! -f "$mountpoint/$kernel" ] || [ ! -f "$mountpoint/$initrd" ]; then
+        printf '%s kernel or initramfs is missing.\n' "$distribution"
+        unmount_system
         return 1
     fi
-
-    printf 'Loading Debian 12 from %s...\n' "$device"
-    if ! /sbin/kexec --load "$mountpoint/vmlinuz" \
-        --initrd="$mountpoint/initrd.img" \
-        --command-line='root=LABEL=ATVTESTROOT rw net.ifnames=0 vesa video=vesafb earlyprintk=efi intel_idle.max_cstate=1 processor.max_cstate=2 nohpet'; then
-        printf 'Could not load the Debian kernel.\n'
-        unmount_debian
+    printf 'Loading %s from %s...\n' "$distribution" "$device"
+    if ! /sbin/kexec --load "$mountpoint/$kernel" \
+        --initrd="$mountpoint/$initrd" --command-line="$kernel_args"; then
+        printf 'Could not load the %s kernel.\n' "$distribution"
+        unmount_system
         return 1
     fi
-    unmount_debian
-    printf 'Starting Debian 12...\n'
+    unmount_system
+    printf 'Starting %s...\n' "$distribution"
     /sbin/kexec --exec
     /sbin/kexec --unload || true
-    printf 'Debian boot failed; returning to the menu.\n'
+    printf '%s boot failed; returning to the menu.\n' "$distribution"
     return 1
 }
 
@@ -83,12 +82,10 @@ while :; do
         while :; do sleep 3600; done
     fi
     case "$choice" in
-        1) boot_debian ;;
-        2)
-            printf '\nSelected: Alpine Linux 3.24\n'
-            printf 'Alpine booting is not implemented yet. Power off to exit.\n'
-            while :; do sleep 3600; done
-            ;;
+        1) boot_system 'Debian 12' ATVTESTROOT vmlinuz initrd.img \
+            'root=LABEL=ATVTESTROOT rw net.ifnames=0 vesa video=vesafb earlyprintk=efi intel_idle.max_cstate=1 processor.max_cstate=2 nohpet' ;;
+        2) boot_system 'Alpine Linux 3.24' ATVALPINE boot/vmlinuz-lts boot/initramfs-lts \
+            'root=LABEL=ATVALPINE rootfstype=ext4 rootflags=noload overlaytmpfs overlaytmpfsflags=size=64m modules=loop,squashfs,sd-mod,usb-storage,ext4,overlay modloop=boot/modloop-lts net.ifnames=0' ;;
         *) printf 'Invalid choice. Please enter 1 or 2.\n' ;;
     esac
 done
