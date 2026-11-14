@@ -30,4 +30,4 @@ The menu-driven Debian and Alpine handoffs have not yet been verified on the App
 bash -n scripts/common.sh filesystem/*.sh image/build.sh
 ```
 
-A Debian 12 image built from the legacy boot chain was reported to boot on first-generation Apple TV hardware. The exact hardware-tested build used a container-specific keyring and other temporary build fixes; the portable scripts should also be rebuilt and tested on target hardware. Multi-OS live boot and installation are not implemented.
+A Debian 12 image built from the legacy boot chain was reported to boot on first-generation Apple TV hardware. The exact hardware-tested build used a container-specific keyring and other temporary build fixes; the portable scripts should also be rebuilt and tested on target hardware. Automated installation is not implemented.
