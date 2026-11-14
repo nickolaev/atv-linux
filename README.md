@@ -18,7 +18,7 @@ The root partition is labeled `ATVTESTROOT`, so avoid attaching multiple copies 
 
 ## Boot selection prototype
 
-The recovery boot script displays a console menu for Debian 12 and Alpine Linux 3.24. A USB keyboard is required. This is a menu-only prototype: after either choice, it displays the selection and waits; it does not boot either system yet. Power off the Apple TV to leave the menu. The menu runs in the bootloader’s embedded environment before its automatic disk scan. The image has not yet been tested with this menu on Apple TV hardware.
+The recovery boot script displays a console menu for Debian 12 and Alpine Linux 3.24. A USB keyboard is required. Selecting Debian loads its kernel from the uniquely labeled USB root partition; failures return to the menu. The legacy kernel may replay the selected USB filesystem journal after an unclean shutdown. Alpine is a placeholder: selecting it displays the choice and waits until power-off. The menu runs in the bootloader’s embedded environment before its automatic disk scan. The menu-driven Debian boot has not yet been tested on Apple TV hardware.
 
 ## Validation
 
