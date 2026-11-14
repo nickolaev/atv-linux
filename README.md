@@ -1,5 +1,9 @@
 # Debian on first-generation Apple TV
 
+The separate [NetBSD experiment](netbsd/README.md) begins with an ATV1sm EFI
+validation image. It does not change the Debian build or yet provide a NetBSD
+live system or installer.
+
 This project builds an i386 Debian 12 (Bookworm) disk image using the existing Apple TV legacy bootloader. Bookworm is oldstable/LTS, not current Debian stable. The image is a writable system for USB boot; it is not yet a multi-OS live environment or an installer.
 
 ## Build

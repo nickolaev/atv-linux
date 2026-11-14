@@ -6,3 +6,5 @@
 *.lai
 *.dll
 *.dylib
+netbsd/__pycache__/
+netbsd/tests/__pycache__/
