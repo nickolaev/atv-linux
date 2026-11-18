@@ -43,11 +43,12 @@ with NetBSD `newfs` and retains normal filesystem checks.
 
 The optional final argument supplies a public SSH key. When present, the
 installed system enables key-based root SSH login for that key. The private
-key stays on the build host. On first internal-disk boot, the system also
-attempts to download the compiler, current pkgsrc and pkgsrc-wip, and install
-`pkgin`, `pkg_chk`, `tmux`, `micro`, `vim`, `mc` and `git`. Package progress
-and failures are reported to the same network collector and logged in
-`/var/log/atv-packages.log`. Download and installation require Internet access.
+key stays on the build host. After logging in, run
+`/usr/local/sbin/atv-provision-packages` as root to download the compiler,
+current pkgsrc and pkgsrc-wip, and install `pkgin`, `pkg_chk`, `tmux`, `micro`,
+`vim`, `mc` and `git`. Package progress and failures are reported to the same
+network collector and logged in `/var/log/atv-packages.log`. Download and
+installation require Internet access.
 
 The original hardware test wrote the internal disk, then a USB-free boot
 reported `result=ready`, the `atv` hostname, DHCP IPv4 and 1,048,576 KiB of

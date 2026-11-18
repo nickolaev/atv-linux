@@ -20,6 +20,7 @@ class MaintenanceTest(unittest.TestCase):
             (root / "etc/ssh").mkdir(parents=True)
             (root / "root").mkdir()
             (root / "etc/rc.conf").write_text("hostname=atv\n")
+            (root / "etc/rc.local").write_text("#!/bin/sh\necho keep\n/usr/local/sbin/atv-provision-packages >/var/log/atv-packages-startup.log 2>&1 &\n")
             (root / "etc/ssh/sshd_config").write_text("PermitRootLogin no\n# defaults\n")
             (base / "dev").mkdir()
             (base / "dev/MAKEDEV").write_text("#!/bin/sh\nexit 0\n")
@@ -54,7 +55,8 @@ class MaintenanceTest(unittest.TestCase):
             config = (root / "etc/ssh/sshd_config").read_text()
             self.assertEqual(config.count("PermitRootLogin"), 1)
             self.assertTrue(config.startswith("PermitRootLogin prohibit-password\n"))
-            self.assertEqual((root / "etc/rc.local").read_text().count("/usr/local/sbin/atv-provision-packages"), 1)
+            self.assertNotIn("/usr/local/sbin/atv-provision-packages", (root / "etc/rc.local").read_text())
+            self.assertIn("echo keep", (root / "etc/rc.local").read_text())
             self.assertTrue((root / "usr/local/sbin/atv-provision-packages").exists())
             self.assertIn("result=ssh-configured", (base / "state/report.txt").read_text())
 

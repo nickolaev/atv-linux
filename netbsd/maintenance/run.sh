@@ -85,10 +85,11 @@ chmod 755 "$root/usr/local/sbin/atv-provision-packages"
 chown 0:0 "$root/usr/local/sbin/atv-provision-packages"
 rc_local="$root/etc/rc.local"
 [ -f "$rc_local" ] || printf '#!/bin/sh\n' > "$rc_local"
-if ! grep -Fq '/usr/local/sbin/atv-provision-packages' "$rc_local"; then
-    printf '%s\n' '/usr/local/sbin/atv-provision-packages >/var/log/atv-packages-startup.log 2>&1 &' >> "$rc_local"
-fi
+# Remove the invocation installed by earlier maintenance images while keeping
+# any unrelated local startup commands intact.
+awk '$0 != "/usr/local/sbin/atv-provision-packages >/var/log/atv-packages-startup.log 2>&1 &" {print}' "$rc_local" > "$rc_local.atv-new"
+mv "$rc_local.atv-new" "$rc_local"
 chmod 755 "$rc_local"
 sync
-echo 'SSH and package provisioning configured.'
+echo 'SSH configured; run /usr/local/sbin/atv-provision-packages manually after login.'
 echo 'Power off, remove the maintenance USB, and boot the internal disk.'

@@ -80,7 +80,6 @@ fi
 cat > "$root/etc/rc.local" <<'CONFIG'
 #!/bin/sh
 /usr/local/sbin/atv-ready >/var/log/atv-ready.log 2>&1 &
-/usr/local/sbin/atv-provision-packages >/var/log/atv-packages-startup.log 2>&1 &
 CONFIG
 chmod 755 "$root/etc/rc.local"
 # Distribution sets provide MAKEDEV; disk wedges need devices available early.
