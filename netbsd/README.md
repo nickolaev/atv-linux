@@ -59,6 +59,9 @@ automatically. Log in to the USB as `root` with password `netbsd`, then run
 the temporary installer USB; use this mode only on a trusted network. The
 command runs the installation inside a persistent `tmux` session, so you can
 reconnect and run `atv-install` again to reattach after an SSH disconnect.
+It asks for an administrator username and separate administrator and root
+passwords before changing the disk. The administrator joins `wheel` and must
+change their password at first login; the root password can be used with `su`.
 After partitioning, the installer activates the new 1 GiB swap wedge to help
 the memory-limited machine while it extracts the distribution sets.
 

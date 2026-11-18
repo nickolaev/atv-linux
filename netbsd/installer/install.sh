@@ -3,10 +3,20 @@
 set -eu
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 export PATH
-[ "$#" -eq 3 ] || { echo 'usage: install.sh wdN ASSET-DIRECTORY STATE-DIRECTORY' >&2; exit 2; }
+[ "$#" -eq 3 ] || [ "$#" -eq 4 ] || { echo 'usage: install.sh wdN ASSET-DIRECTORY STATE-DIRECTORY [ACCOUNT-FILE]' >&2; exit 2; }
 disk=$1
 assets=$2
 state=$3
+account_file=${4-}
+[ -z "$account_file" ] || [ -s "$account_file" ] || { echo 'missing administrator account file' >&2; exit 1; }
+if [ -n "$account_file" ]; then
+    account_name=$(sed -n '1p' "$account_file")
+    account_hash=$(sed -n '2p' "$account_file")
+    root_hash=$(sed -n '3p' "$account_file")
+    case "$account_name" in ''|root|*[!a-z0-9_-]*|[!a-z]*) echo 'invalid administrator name' >&2; exit 1 ;; esac
+    [ "${#account_name}" -le 16 ] && [ -n "$account_hash" ] && [ -n "$root_hash" ] || { echo 'invalid administrator credentials' >&2; exit 1; }
+    unset account_name account_hash root_hash
+fi
 bindir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)
 [ -r "$bindir/ready.sh" ] && [ -r "$bindir/provision.sh" ] && [ -x "$bindir/fetch-sources.sh" ] || { echo 'missing installed-system reporter or package provisioning scripts' >&2; exit 1; }
 "$bindir/check-target.sh" "$disk"
@@ -75,7 +85,7 @@ swapctl -lk
 newfs -O 1 "/dev/r$rootdk"
 mkdir -p /mnt/atv-root /mnt/atv-esp
 mount -t ffs "/dev/$rootdk" /mnt/atv-root
-"$bindir/populate-root.sh" /mnt/atv-root "$assets/sets" "$assets/authorized_keys"
+"$bindir/populate-root.sh" /mnt/atv-root "$assets/sets" "$assets/authorized_keys" "$account_file"
 mount -t msdos "/dev/$espdk" /mnt/atv-esp
 cp /mnt/atv-root/netbsd /mnt/atv-esp/netbsd
 cat > /mnt/atv-esp/EFI/NetBSD/boot.cfg <<'CONFIG'

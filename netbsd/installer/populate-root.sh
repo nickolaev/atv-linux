@@ -2,13 +2,14 @@
 # Populate an already mounted, newly formatted NetBSD root filesystem.
 set -eu
 
-if [ "$#" -ne 2 ] && [ "$#" -ne 3 ]; then
-    echo 'usage: populate-root.sh MOUNTPOINT SETS-DIRECTORY [SSH-PUBLIC-KEY]' >&2
+if [ "$#" -lt 2 ] || [ "$#" -gt 4 ]; then
+    echo 'usage: populate-root.sh MOUNTPOINT SETS-DIRECTORY [SSH-PUBLIC-KEY [ACCOUNT-FILE]]' >&2
     exit 2
 fi
 root=$1
 sets=$2
 ssh_key=${3-}
+account_file=${4-}
 bindir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)
 [ -f "$bindir/ready.sh" ] || { echo 'missing installed-system reporter' >&2; exit 1; }
 [ -f "$bindir/provision.sh" ] || { echo 'missing package provisioning script' >&2; exit 1; }
@@ -62,6 +63,19 @@ cp "$bindir/ready.sh" "$root/usr/local/sbin/atv-ready"
 chmod 755 "$root/usr/local/sbin/atv-ready"
 cp "$bindir/provision.sh" "$root/usr/local/sbin/atv-provision-packages"
 chmod 755 "$root/usr/local/sbin/atv-provision-packages"
+if [ -n "$account_file" ]; then
+    [ -s "$account_file" ] || { echo 'missing administrator account file' >&2; exit 1; }
+    username=$(sed -n '1p' "$account_file")
+    password_hash=$(sed -n '2p' "$account_file")
+    root_hash=$(sed -n '3p' "$account_file")
+    case "$username" in ''|root|*[!a-z0-9_-]*|[!a-z]*) echo 'invalid administrator name' >&2; exit 1 ;; esac
+    [ "${#username}" -le 16 ] && [ -n "$password_hash" ] && [ -n "$root_hash" ] || { echo 'invalid administrator credentials' >&2; exit 1; }
+    chroot "$root" /usr/sbin/useradd -m -G wheel -s /bin/sh -p "$password_hash" "$username"
+    chroot "$root" /usr/sbin/usermod -F "$username"
+    chroot "$root" /usr/sbin/usermod -p "$root_hash" root
+    unset password_hash root_hash
+    echo 'sshd=YES' >> "$root/etc/rc.conf"
+fi
 if [ -n "$ssh_key" ] && [ -s "$ssh_key" ]; then
     mkdir -p "$root/root/.ssh"
     chmod 700 "$root/root/.ssh"
@@ -75,7 +89,7 @@ if [ -n "$ssh_key" ] && [ -s "$ssh_key" ]; then
     } > "$config.atv-new"
     chmod 600 "$config.atv-new"
     mv "$config.atv-new" "$config"
-    echo 'sshd=YES' >> "$root/etc/rc.conf"
+    [ -n "$account_file" ] || echo 'sshd=YES' >> "$root/etc/rc.conf"
 fi
 cat > "$root/etc/rc.local" <<'CONFIG'
 #!/bin/sh

@@ -16,7 +16,7 @@ for archive_name in ('base.tgz', 'etc.tgz', 'kern-GENERIC.tgz', 'modules.tgz'):
             path = './' + entry.name.removeprefix('./').rstrip('/')
             if path == './':
                 continue
-            if entry.isdir() or entry.isfile() or entry.issym():
+            if entry.isdir() or entry.isfile() or entry.issym() or entry.islnk():
                 entries[path] = (entry.uid, entry.gid, entry.mode & 0o7777,
                                  'dir' if entry.isdir() else 'link' if entry.issym() else 'file')
 
