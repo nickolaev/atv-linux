@@ -48,7 +48,15 @@ key stays on the build host. After logging in, run
 current pkgsrc and pkgsrc-wip, and install `pkgin`, `pkg_chk`, `tmux`, `micro`,
 `vim`, `mc` and `git`. Package progress and failures are reported to the same
 network collector and logged in `/var/log/atv-packages.log`. Download and
-installation require Internet access.
+installation require Internet access. The installer also attempts to fetch
+current pkgsrc and pkgsrc-wip source archives during installation; a failure
+is reported and the provisioning command can retry them after boot.
+
+Add `--interactive-ssh` after the output path and optional public key to boot
+the USB into an SSH-accessible installer instead of starting the disk install
+automatically. Log in to the USB as `root` with password `netbsd`, then run
+`atv-install` to install to the internal disk. These credentials apply only to
+the temporary installer USB; use this mode only on a trusted network.
 
 The original hardware test wrote the internal disk, then a USB-free boot
 reported `result=ready`, the `atv` hostname, DHCP IPv4 and 1,048,576 KiB of

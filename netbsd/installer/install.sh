@@ -8,7 +8,7 @@ disk=$1
 assets=$2
 state=$3
 bindir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)
-[ -r "$bindir/ready.sh" ] && [ -r "$bindir/provision.sh" ] || { echo 'missing installed-system reporter or package provisioning script' >&2; exit 1; }
+[ -r "$bindir/ready.sh" ] && [ -r "$bindir/provision.sh" ] && [ -x "$bindir/fetch-sources.sh" ] || { echo 'missing installed-system reporter or package provisioning scripts' >&2; exit 1; }
 "$bindir/check-target.sh" "$disk"
 [ -d "$assets/sets" ] && [ -d "$assets/boot" ] && [ -d "$state" ] || { echo 'missing assets or state directory' >&2; exit 1; }
 [ ! -e "$state/install-started" ] || { echo 'installation already started; refusing to repeat' >&2; exit 1; }
@@ -74,10 +74,19 @@ timeout=5
 default=1
 menu=NetBSD 11.1:userconf disable nouveau;root NAME=atv-root;boot esp:/netbsd -v
 CONFIG
+sources_ok=yes
+echo 'Preparing HTTPS certificates for source downloads.'
+if certctl rehash && "$bindir/fetch-sources.sh" /mnt/atv-root; then
+    echo 'Source archives installed.'
+else
+    sources_ok=no
+    echo 'Source download failed; after boot, run /usr/local/sbin/atv-provision-packages to retry.' >&2
+fi
 sync
 umount /mnt/atv-esp
 umount /mnt/atv-root
 sync
+[ "$sources_ok" = yes ] || { echo 'NetBSD installed, but source setup is incomplete.' >&2; exit 1; }
 printf 'target=%s\nstate=installed\n' "$disk" > "$state/install-complete"
 sync
 echo 'Installation files written; cold boot is not yet verified.'

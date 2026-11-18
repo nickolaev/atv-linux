@@ -2,16 +2,21 @@
 # Rebuild the physical ATV1 NetBSD installer from release sets and EFI inputs.
 set -Eeuo pipefail
 usage() {
-    echo 'Usage: build-installer.sh ASD-SYSTEM ATV1SM RELEASE-SETS OUTPUT.img [SSH-PUBLIC-KEY]' >&2
+    echo 'Usage: build-installer.sh ASD-SYSTEM ATV1SM RELEASE-SETS OUTPUT.img [SSH-PUBLIC-KEY] [--interactive-ssh]' >&2
     echo 'RELEASE-SETS must contain SHA512, base.tgz, etc.tgz, kern-GENERIC.tgz and modules.tgz.' >&2
     echo 'Runs on Linux with makefs, sgdisk, parted, dosfstools, mtools and Python 3.' >&2
 }
-(($# == 4 || $# == 5)) || { usage; exit 2; }
+(($# >= 4 && $# <= 6)) || { usage; exit 2; }
 asd=$1
 atv1sm=$2
 sets=$3
 output=$4
-ssh_key=${5-}
+ssh_key=''
+interactive=0
+shift 4
+for arg in "$@"; do
+    if [[ $arg == --interactive-ssh ]]; then interactive=1; else ssh_key=$arg; fi
+done
 script_dir=$(cd "$(dirname "$0")" && pwd -P)
 netbsd_dir=$(cd "$script_dir/.." && pwd -P)
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
@@ -78,6 +83,19 @@ if [[ -n $ssh_key ]]; then
     bash "$script_dir/stage-assets.sh" "$root" "$sets" "$work/template.img" "$ssh_key"
 else
     bash "$script_dir/stage-assets.sh" "$root" "$sets" "$work/template.img"
+fi
+if ((interactive)); then
+    install -m 755 "$script_dir/../ssh-installer/start.sh" "$root/usr/atv-installer/bin/ssh-installer-start"
+    install -d -m 755 "$root/usr/local/bin"
+    install -m 755 "$script_dir/../ssh-installer/atv-install" "$root/usr/local/bin/atv-install"
+    install -m 755 "$script_dir/../ssh-installer/banner.sh" "$root/usr/local/bin/atv-banner"
+    install -m 644 "$script_dir/../ssh-installer/motd" "$root/etc/motd"
+    printf '\n[ -x /usr/local/bin/atv-banner ] && /usr/local/bin/atv-banner\n' >> "$root/root/.profile"
+    cat > "$root/etc/rc.local" <<'CONFIG'
+#!/bin/sh
+/usr/atv-installer/bin/ssh-installer-start > /var/log/atv-ssh-installer.log 2>&1 &
+CONFIG
+    chmod 755 "$root/etc/rc.local"
 fi
 python3 "$script_dir/makefs-mtree.py" "$root" "$sets" "$work/root.mtree"
 # Release sets include directories inaccessible to an unprivileged builder.

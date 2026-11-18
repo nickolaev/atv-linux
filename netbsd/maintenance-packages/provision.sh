@@ -9,7 +9,7 @@ repo=https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/i386/11.1/All
 sets=https://cdn.netbsd.org/pub/NetBSD/NetBSD-11.1/i386/binary/sets
 sources=https://cdn.netbsd.org/pub/pkgsrc/current
 mkdir -p "$state"
-# A reboot after failure retries; a successful run is left alone.
+# A manual retry resumes after failure; a successful run is left alone.
 [ ! -f "$state/complete" ] || exit 0
 lock=/var/run/atv-packages.lock
 mkdir "$lock" 2>/dev/null || exit 0
@@ -90,10 +90,15 @@ if [ ! -d /usr/pkgsrc ]; then
 fi
 stage=wip
 if [ ! -d /usr/pkgsrc/wip ]; then
-    rm -rf "$state/wip"
-    command -v git >/dev/null 2>&1 || { echo "git unavailable for pkgsrc-wip"; exit 1; }
-    git clone --depth 1 https://github.com/NetBSD/pkgsrc-wip.git "$state/wip"
-    mv "$state/wip" /usr/pkgsrc/wip
+    cd "$state"
+    ftp -o wip.tar.gz https://github.com/NetBSD/pkgsrc-wip/archive/refs/heads/master.tar.gz
+    rm -rf "$state/wip-source"
+    mkdir "$state/wip-source"
+    tar -xzpf wip.tar.gz -C "$state/wip-source"
+    [ -f "$state/wip-source/pkgsrc-wip-master/Makefile" ]
+    mv "$state/wip-source/pkgsrc-wip-master" /usr/pkgsrc/wip
+    rmdir "$state/wip-source"
+    rm -f wip.tar.gz
 fi
 [ -z "$failed_packages" ] || { echo "Missing packages:$failed_packages"; exit 1; }
 stage=complete
