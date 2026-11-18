@@ -61,8 +61,17 @@ dkctl "$disk" makewedges
 wedges=$(dkctl "$disk" listwedges)
 rootdk=$(printf '%s\n' "$wedges" | awk '$2 == "atv-root," {gsub(":", "", $1); print $1}')
 espdk=$(printf '%s\n' "$wedges" | awk '$2 == "atv-esp," {gsub(":", "", $1); print $1}')
-case "$rootdk:$espdk" in dk[0-9]*:dk[0-9]*) ;; *) echo 'cannot resolve target wedges' >&2; exit 1 ;; esac
-(cd /dev && sh MAKEDEV "$rootdk" "$espdk")
+swapdk=$(printf '%s\n' "$wedges" | awk '$2 == "atv-swap," && $3 == 2097152 && $NF == "swap" {gsub(":", "", $1); print $1}')
+case "$rootdk:$espdk:$swapdk" in dk[0-9]*:dk[0-9]*:dk[0-9]*) ;; *) echo 'cannot resolve target wedges' >&2; exit 1 ;; esac
+# Refuse ambiguous labels or unexpected swap geometry before activating swap.
+[ "$(printf '%s\n' "$wedges" | awk '$2 == "atv-swap," {n++} END {print n+0}')" -eq 1 ] || { echo 'target swap wedge is ambiguous' >&2; exit 1; }
+case "$swapdk" in *[!0-9dk]*|'') echo 'invalid swap wedge' >&2; exit 1 ;; esac
+(cd /dev && sh MAKEDEV "$rootdk" "$espdk" "$swapdk")
+echo "Activating 1 GiB installation swap on /dev/$swapdk."
+swapctl -a "/dev/$swapdk" || { echo 'could not activate installation swap' >&2; exit 1; }
+# Keep swap active until the installer system shuts down. Removing it here
+# would have to page data back into the Apple TV's limited physical memory.
+swapctl -lk
 newfs -O 1 "/dev/r$rootdk"
 mkdir -p /mnt/atv-root /mnt/atv-esp
 mount -t ffs "/dev/$rootdk" /mnt/atv-root

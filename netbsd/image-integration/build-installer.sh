@@ -88,6 +88,8 @@ if ((interactive)); then
     install -m 755 "$script_dir/../ssh-installer/start.sh" "$root/usr/atv-installer/bin/ssh-installer-start"
     install -d -m 755 "$root/usr/local/bin"
     install -m 755 "$script_dir/../ssh-installer/atv-install" "$root/usr/local/bin/atv-install"
+    install -m 755 "$script_dir/../ssh-installer/install-session" "$root/usr/atv-installer/bin/install-session"
+    [[ -x $root/usr/bin/tmux ]] || die "NetBSD base set is missing tmux"
     install -m 755 "$script_dir/../ssh-installer/banner.sh" "$root/usr/local/bin/atv-banner"
     install -m 644 "$script_dir/../ssh-installer/motd" "$root/etc/motd"
     printf '\n[ -x /usr/local/bin/atv-banner ] && /usr/local/bin/atv-banner\n' >> "$root/root/.profile"

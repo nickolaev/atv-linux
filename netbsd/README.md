@@ -56,7 +56,11 @@ Add `--interactive-ssh` after the output path and optional public key to boot
 the USB into an SSH-accessible installer instead of starting the disk install
 automatically. Log in to the USB as `root` with password `netbsd`, then run
 `atv-install` to install to the internal disk. These credentials apply only to
-the temporary installer USB; use this mode only on a trusted network.
+the temporary installer USB; use this mode only on a trusted network. The
+command runs the installation inside a persistent `tmux` session, so you can
+reconnect and run `atv-install` again to reattach after an SSH disconnect.
+After partitioning, the installer activates the new 1 GiB swap wedge to help
+the memory-limited machine while it extracts the distribution sets.
 
 The original hardware test wrote the internal disk, then a USB-free boot
 reported `result=ready`, the `atv` hostname, DHCP IPv4 and 1,048,576 KiB of
