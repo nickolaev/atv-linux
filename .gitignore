@@ -6,5 +6,9 @@
 *.lai
 *.dll
 *.dylib
-netbsd/__pycache__/
-netbsd/tests/__pycache__/
+
+/filesystem/alpine/cache/
+/filesystem/alpine-3.24.4-x86.tar
+
+__pycache__/
+*.pyc

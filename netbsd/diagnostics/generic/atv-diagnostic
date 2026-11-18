@@ -1,0 +1,50 @@
+#!/bin/sh
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+report=/var/run/atv-diagnostic-report.txt
+# Give DHCP time to obtain an address before recording interface state.
+attempt=0
+while [ "$attempt" -lt 60 ]; do
+ if ifconfig rtk0 2>/dev/null | grep -q 'inet ' || ifconfig re0 2>/dev/null | grep -q 'inet '; then
+  break
+ fi
+ attempt=$((attempt + 1))
+ sleep 2
+done
+(
+ echo 'ATV-GENERIC-DIAGNOSTIC-1'
+ date -u
+ uname -a
+ hostname
+ for command in 'ifconfig -a' 'netstat -rn' 'dmesg' 'drvctl -l' 'usbdevs -v' 'modstat' 'cpuctl list' 'cpuctl identify 0' 'sysctl hw.ncpu' 'sysctl machdep.cpu.frequency' 'sysctl hw.acpi.cpu' 'envstat' 'audiocfg list' 'swapctl -lk' 'mount'; do
+  echo "--- $command ---"
+  $command 2>&1 || echo "command failed: $?"
+ done
+ original=$(sysctl -n machdep.cpu.frequency.target 2>/dev/null) || original=
+ available=$(sysctl -n machdep.cpu.frequency.available 2>/dev/null) || available=
+ echo "--- frequency tests (original=$original available=$available) ---"
+ if [ -n "$original" ] && [ -n "$available" ]; then
+  for mhz in 600 800 1000; do
+   case " $available " in
+    *" $mhz "*)
+     sysctl -w "machdep.cpu.frequency.target=$mhz" 2>&1
+     sysctl machdep.cpu.frequency.current 2>&1
+     ;;
+   esac
+  done
+  sysctl -w "machdep.cpu.frequency.target=$original" 2>&1
+ fi
+ echo '--- DHCP configuration ---'
+ cat /etc/dhcpcd.conf 2>&1
+ echo 'report=complete'
+) > "$report" 2>&1
+# DHCP and PHY negotiation can finish after rc.local starts.
+attempt=0
+while [ "$attempt" -lt 30 ]; do
+ if nc -w 10 192.168.100.246 8083 < "$report"; then
+  exit 0
+ fi
+ attempt=$((attempt + 1))
+ sleep 10
+done
+exit 1

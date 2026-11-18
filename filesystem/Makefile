@@ -6,3 +6,4 @@ clean:
 	sudo rm -rf ./debian-appletv-filesystem || true
 	sudo rm -f *.tar.xz >/dev/null 2>&1
 	sudo rm -f *.md5 >/dev/null 2>&1
+	sudo rm -f alpine-3.24.4-x86.tar
