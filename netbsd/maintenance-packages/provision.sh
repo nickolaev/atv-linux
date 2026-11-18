@@ -36,6 +36,11 @@ exec >> "$log" 2>&1
 printf '\nStarting package provisioning: '
 date -u
 
+# Fresh NetBSD installations ship CA certificates but need the hashed trust
+# directory populated before HTTPS package downloads can be verified.
+stage=certificates
+certctl rehash
+
 # pkg_add resolves the matching pkgin archive and its dependencies using the
 # official release repository; its own package database tracks installed files.
 stage=packages
