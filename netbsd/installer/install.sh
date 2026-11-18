@@ -8,7 +8,7 @@ disk=$1
 assets=$2
 state=$3
 bindir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)
-[ -r "$bindir/ready.sh" ] || { echo 'missing installed-system readiness reporter' >&2; exit 1; }
+[ -r "$bindir/ready.sh" ] && [ -r "$bindir/provision.sh" ] || { echo 'missing installed-system reporter or package provisioning script' >&2; exit 1; }
 "$bindir/check-target.sh" "$disk"
 [ -d "$assets/sets" ] && [ -d "$assets/boot" ] && [ -d "$state" ] || { echo 'missing assets or state directory' >&2; exit 1; }
 [ ! -e "$state/install-started" ] || { echo 'installation already started; refusing to repeat' >&2; exit 1; }
@@ -66,7 +66,7 @@ case "$rootdk:$espdk" in dk[0-9]*:dk[0-9]*) ;; *) echo 'cannot resolve target we
 newfs -O 1 "/dev/r$rootdk"
 mkdir -p /mnt/atv-root /mnt/atv-esp
 mount -t ffs "/dev/$rootdk" /mnt/atv-root
-"$bindir/populate-root.sh" /mnt/atv-root "$assets/sets"
+"$bindir/populate-root.sh" /mnt/atv-root "$assets/sets" "$assets/authorized_keys"
 mount -t msdos "/dev/$espdk" /mnt/atv-esp
 cp /mnt/atv-root/netbsd /mnt/atv-esp/netbsd
 cat > /mnt/atv-esp/EFI/NetBSD/boot.cfg <<'CONFIG'

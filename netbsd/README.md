@@ -28,7 +28,8 @@ regular image file without requiring a loop mount or root privileges.
 ```sh
 bash netbsd/image-integration/build-installer.sh \
   /path/to/FieldDiags/System /path/to/ATV1sm \
-  /path/to/NetBSD-11.1-i386-sets /path/to/new-netbsd-installer.img
+  /path/to/NetBSD-11.1-i386-sets /path/to/new-netbsd-installer.img \
+  /path/to/ssh-public-key.pub
 ```
 
 The image automatically repartitions the **FUJITSU MHW2040AT with 78,140,160
@@ -40,10 +41,17 @@ for a different network. The USB's temporary root skips `fsck` because the
 host `makefs` image failed a repeat-boot check. The installed root is created
 with NetBSD `newfs` and retains normal filesystem checks.
 
+The optional final argument supplies a public SSH key. When present, the
+installed system enables key-based root SSH login for that key. The private
+key stays on the build host. On first internal-disk boot, the system also
+attempts to download the compiler, current pkgsrc and pkgsrc-wip, and install
+`pkgin`, `pkg_chk`, `tmux`, `micro`, `vim`, `mc` and `git`. Package progress
+and failures are reported to the same network collector and logged in
+`/var/log/atv-packages.log`. Download and installation require Internet access.
+
 The original hardware test wrote the internal disk, then a USB-free boot
 reported `result=ready`, the `atv` hostname, DHCP IPv4 and 1,048,576 KiB of
-active swap. The automatic installer currently does not provision SSH or
-pkgsrc; those are handled by the separate maintenance work.
+active swap. The first-boot SSH and package additions require hardware testing.
 
 `netbsd/macho/netbsd_elf.py` inspects an uncompressed i386 ELF kernel and
 reports the physical load segments and entry address. Optional `--usable` and

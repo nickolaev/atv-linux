@@ -2,20 +2,27 @@
 # Rebuild the physical ATV1 NetBSD installer from release sets and EFI inputs.
 set -Eeuo pipefail
 usage() {
-    echo 'Usage: build-installer.sh ASD-SYSTEM ATV1SM RELEASE-SETS OUTPUT.img' >&2
+    echo 'Usage: build-installer.sh ASD-SYSTEM ATV1SM RELEASE-SETS OUTPUT.img [SSH-PUBLIC-KEY]' >&2
     echo 'RELEASE-SETS must contain SHA512, base.tgz, etc.tgz, kern-GENERIC.tgz and modules.tgz.' >&2
     echo 'Runs on Linux with makefs, sgdisk, parted, dosfstools, mtools and Python 3.' >&2
 }
-(($# == 4)) || { usage; exit 2; }
+(($# == 4 || $# == 5)) || { usage; exit 2; }
 asd=$1
 atv1sm=$2
 sets=$3
 output=$4
+ssh_key=${5-}
 script_dir=$(cd "$(dirname "$0")" && pwd -P)
 netbsd_dir=$(cd "$script_dir/.." && pwd -P)
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 [[ -d $asd && -d $atv1sm && -d $sets ]] || die 'input directory missing'
 [[ ! -e $output && ! -L $output ]] || die 'output already exists'
+[[ -z $ssh_key || (-f $ssh_key && -s $ssh_key && ! -L $ssh_key) ]] || die 'SSH public key must be a non-empty regular file'
+if [[ -n $ssh_key ]]; then
+    command -v ssh-keygen >/dev/null || die 'missing ssh-keygen'
+    grep -Eq '^(ssh-(ed25519|rsa)|ecdsa-sha2-|sk-ssh-|sk-ecdsa-)' "$ssh_key" || die 'expected an OpenSSH public key'
+    ssh-keygen -lf "$ssh_key" >/dev/null || die 'invalid SSH public key'
+fi
 [[ -d $(dirname "$output") ]] || die 'output parent missing'
 for program in makefs sgdisk parted mkfs.vfat mcopy sha512sum python3 tar; do
     command -v "$program" >/dev/null || die "missing $program"
@@ -67,7 +74,11 @@ chmod a-w "$root/etc/rc.d/fsck"
 bash "$netbsd_dir/build.sh" --asd-system "$asd" --atv1sm "$atv1sm" \
     --netbsd-kernel "$root/netbsd" --netbsd-efi "$root/usr/mdec/bootia32.efi" \
     --autoboot --size-mib 128 --output "$work/template.img"
-bash "$script_dir/stage-assets.sh" "$root" "$sets" "$work/template.img"
+if [[ -n $ssh_key ]]; then
+    bash "$script_dir/stage-assets.sh" "$root" "$sets" "$work/template.img" "$ssh_key"
+else
+    bash "$script_dir/stage-assets.sh" "$root" "$sets" "$work/template.img"
+fi
 python3 "$script_dir/makefs-mtree.py" "$root" "$sets" "$work/root.mtree"
 # Release sets include directories inaccessible to an unprivileged builder.
 # makefs applies the original permissions from the mtree to the final image.

@@ -2,14 +2,16 @@
 # Populate an already mounted, newly formatted NetBSD root filesystem.
 set -eu
 
-if [ "$#" -ne 2 ]; then
-    echo 'usage: populate-root.sh MOUNTPOINT SETS-DIRECTORY' >&2
+if [ "$#" -ne 2 ] && [ "$#" -ne 3 ]; then
+    echo 'usage: populate-root.sh MOUNTPOINT SETS-DIRECTORY [SSH-PUBLIC-KEY]' >&2
     exit 2
 fi
 root=$1
 sets=$2
+ssh_key=${3-}
 bindir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)
 [ -f "$bindir/ready.sh" ] || { echo 'missing installed-system reporter' >&2; exit 1; }
+[ -f "$bindir/provision.sh" ] || { echo 'missing package provisioning script' >&2; exit 1; }
 [ -d "$root" ] && [ -d "$sets" ] || { echo 'missing root or sets directory' >&2; exit 1; }
 root=$(cd "$root" && pwd -P)
 case "$root" in *' '*) echo 'mountpoint cannot contain spaces' >&2; exit 1 ;; esac
@@ -58,9 +60,27 @@ CONFIG
 mkdir -p "$root/usr/local/sbin"
 cp "$bindir/ready.sh" "$root/usr/local/sbin/atv-ready"
 chmod 755 "$root/usr/local/sbin/atv-ready"
+cp "$bindir/provision.sh" "$root/usr/local/sbin/atv-provision-packages"
+chmod 755 "$root/usr/local/sbin/atv-provision-packages"
+if [ -n "$ssh_key" ] && [ -s "$ssh_key" ]; then
+    mkdir -p "$root/root/.ssh"
+    chmod 700 "$root/root/.ssh"
+    cp "$ssh_key" "$root/root/.ssh/authorized_keys"
+    chmod 600 "$root/root/.ssh/authorized_keys"
+    chown -R 0:0 "$root/root/.ssh"
+    config="$root/etc/ssh/sshd_config"
+    {
+        echo 'PermitRootLogin prohibit-password'
+        awk 'tolower($1) != "permitrootlogin" {print}' "$config"
+    } > "$config.atv-new"
+    chmod 600 "$config.atv-new"
+    mv "$config.atv-new" "$config"
+    echo 'sshd=YES' >> "$root/etc/rc.conf"
+fi
 cat > "$root/etc/rc.local" <<'CONFIG'
 #!/bin/sh
 /usr/local/sbin/atv-ready >/var/log/atv-ready.log 2>&1 &
+/usr/local/sbin/atv-provision-packages >/var/log/atv-packages-startup.log 2>&1 &
 CONFIG
 chmod 755 "$root/etc/rc.local"
 # Distribution sets provide MAKEDEV; disk wedges need devices available early.

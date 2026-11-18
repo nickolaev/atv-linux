@@ -2,17 +2,25 @@
 # Stage installer payloads into an offline NetBSD root tree.
 set -Eeuo pipefail
 
-if (($# != 3)); then
-    echo "Usage: $0 ROOT-DIRECTORY RELEASE-SETS-DIRECTORY EFI-TEMPLATE.img" >&2
+if (($# != 3 && $# != 4)); then
+    echo "Usage: $0 ROOT-DIRECTORY RELEASE-SETS-DIRECTORY EFI-TEMPLATE.img [SSH-PUBLIC-KEY]" >&2
     exit 2
 fi
 root=$1
 sets=$2
 template=$3
+ssh_key=${4-}
 script_dir=$(cd "$(dirname "$0")" && pwd -P)
 destination=$root/usr/atv-installer
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 [[ -d $root && -d $sets && -f $template ]] || die 'missing input'
+[[ -z $ssh_key || (-f $ssh_key && -s $ssh_key && ! -L $ssh_key) ]] || die 'invalid SSH public key'
+if [[ -n $ssh_key ]]; then
+    command -v ssh-keygen >/dev/null || die 'missing ssh-keygen'
+    grep -Eq '^(ssh-(ed25519|rsa)|ecdsa-sha2-|sk-ssh-|sk-ecdsa-)' "$ssh_key" || die 'expected an OpenSSH public key'
+    ssh-keygen -lf "$ssh_key" >/dev/null || die 'invalid SSH public key'
+fi
+[[ -f $script_dir/../maintenance-packages/provision.sh ]] || die 'missing package provisioning script'
 [[ ! -e $destination && ! -L $destination ]] || die 'installer assets already exist'
 for name in SHA512 base.tgz etc.tgz kern-GENERIC.tgz modules.tgz; do
     [[ -f $sets/$name && ! -L $sets/$name ]] || die "missing release set $name"
@@ -37,6 +45,12 @@ for name in check-target.sh populate-root.sh install.sh startup.sh ready.sh; do
     cp "$script_dir/../installer/$name" "$work/bin/$name"
     chmod 755 "$work/bin/$name"
 done
+cp "$script_dir/../maintenance-packages/provision.sh" "$work/bin/provision.sh"
+chmod 755 "$work/bin/provision.sh"
+if [[ -n $ssh_key ]]; then
+    cp "$ssh_key" "$work/authorized_keys"
+    chmod 644 "$work/authorized_keys"
+fi
 dd if="$template" of="$work/boot/recovery.fat" bs=512 skip=2048 count=81920 status=none
 dd if="$template" of="$work/boot/efi.fat" bs=512 skip=83968 count=176128 status=none
 (cd "$work/boot" && sha512sum recovery.fat efi.fat > SHA512)
