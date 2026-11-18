@@ -32,9 +32,9 @@ while :; do
 done
 read_password_hash() {
  while :; do
-    printf '%s password: ' "$1"
-    stty -echo
     tty_hidden=yes
+    stty -echo
+    printf '%s password: ' "$1"
     IFS= read -r password || { stty echo; exit 1; }
     printf '\nConfirm password: '
     IFS= read -r confirmation || { stty echo; exit 1; }
