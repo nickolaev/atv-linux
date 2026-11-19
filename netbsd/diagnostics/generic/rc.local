@@ -1,0 +1,3 @@
+#!/bin/sh
+# Runs after network configuration, leaving the boot process unblocked.
+/usr/local/sbin/atv-diagnostic >/var/run/atv-diagnostic.log 2>&1 &

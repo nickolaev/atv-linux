@@ -1,0 +1,9 @@
+
+  APPLE TV  /  NETBSD 11.1
+
+  Install or reconnect     atv-install
+  Help                     atv-install --help
+  Detach                   Ctrl-b, then d
+
+  WARNING: Starting installation erases the internal disk and all its data.
+
