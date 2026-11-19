@@ -20,7 +20,7 @@ if [[ -n $ssh_key ]]; then
     grep -Eq '^(ssh-(ed25519|rsa)|ecdsa-sha2-|sk-ssh-|sk-ecdsa-)' "$ssh_key" || die 'expected an OpenSSH public key'
     ssh-keygen -lf "$ssh_key" >/dev/null || die 'invalid SSH public key'
 fi
-[[ -f $script_dir/../maintenance-packages/provision.sh && -f $script_dir/../maintenance-packages/fetch-sources.sh ]] || die 'missing package provisioning scripts'
+[[ -f $script_dir/../maintenance-packages/provision.sh && -f $script_dir/../maintenance-packages/fetch-sources.sh && -f $script_dir/../maintenance-packages/bootstrap-target.sh ]] || die 'missing package provisioning scripts'
 [[ ! -e $destination && ! -L $destination ]] || die 'installer assets already exist'
 for name in SHA512 base.tgz etc.tgz kern-GENERIC.tgz modules.tgz; do
     [[ -f $sets/$name && ! -L $sets/$name ]] || die "missing release set $name"
@@ -47,8 +47,10 @@ for name in check-target.sh populate-root.sh install.sh startup.sh ready.sh; do
 done
 cp "$script_dir/../maintenance-packages/provision.sh" "$work/bin/provision.sh"
 cp "$script_dir/../maintenance-packages/fetch-sources.sh" "$work/bin/fetch-sources.sh"
+cp "$script_dir/../maintenance-packages/bootstrap-target.sh" "$work/bin/bootstrap-target.sh"
 chmod 755 "$work/bin/provision.sh"
 chmod 755 "$work/bin/fetch-sources.sh"
+chmod 755 "$work/bin/bootstrap-target.sh"
 if [[ -n $ssh_key ]]; then
     cp "$ssh_key" "$work/authorized_keys"
     chmod 644 "$work/authorized_keys"

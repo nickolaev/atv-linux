@@ -18,7 +18,7 @@ if [ -n "$account_file" ]; then
     unset account_name account_hash root_hash
 fi
 bindir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)
-[ -r "$bindir/ready.sh" ] && [ -r "$bindir/provision.sh" ] && [ -x "$bindir/fetch-sources.sh" ] || { echo 'missing installed-system reporter or package provisioning scripts' >&2; exit 1; }
+[ -r "$bindir/ready.sh" ] && [ -r "$bindir/provision.sh" ] && [ -x "$bindir/fetch-sources.sh" ] && [ -x "$bindir/bootstrap-target.sh" ] || { echo 'missing installed-system reporter or package provisioning scripts' >&2; exit 1; }
 "$bindir/check-target.sh" "$disk"
 [ -d "$assets/sets" ] && [ -d "$assets/boot" ] && [ -d "$state" ] || { echo 'missing assets or state directory' >&2; exit 1; }
 [ ! -e "$state/install-started" ] || { echo 'installation already started; refusing to repeat' >&2; exit 1; }
@@ -101,11 +101,18 @@ else
     sources_ok=no
     echo 'Source download failed; after boot, run /usr/local/sbin/atv-provision-packages to retry.' >&2
 fi
+packages_ok=yes
+if "$bindir/bootstrap-target.sh" /mnt/atv-root; then
+    echo 'Basic package tools installed.'
+else
+    packages_ok=no
+    echo 'Package bootstrap failed; after boot, run /usr/local/sbin/atv-provision-packages to retry.' >&2
+fi
 sync
 umount /mnt/atv-esp
 umount /mnt/atv-root
 sync
-[ "$sources_ok" = yes ] || { echo 'NetBSD installed, but source setup is incomplete.' >&2; exit 1; }
+[ "$sources_ok" = yes ] && [ "$packages_ok" = yes ] || { echo 'NetBSD installed, but package or source setup is incomplete.' >&2; exit 1; }
 printf 'target=%s\nstate=installed\n' "$disk" > "$state/install-complete"
 sync
 echo 'Installation files written; cold boot is not yet verified.'

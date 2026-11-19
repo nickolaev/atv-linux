@@ -44,13 +44,14 @@ with NetBSD `newfs` and retains normal filesystem checks.
 The optional final argument supplies a public SSH key. When present, the
 installed system enables key-based root SSH login for that key. The private
 key stays on the build host. After logging in, run
-`/usr/local/sbin/atv-provision-packages` as root to download the compiler,
-current pkgsrc and pkgsrc-wip, and install `pkgin`, `pkg_chk`, `tmux`, `micro`,
-`vim`, `mc` and `git`. Package progress and failures are reported to the same
-network collector and logged in `/var/log/atv-packages.log`. Download and
-installation require Internet access. The installer also attempts to fetch
-current pkgsrc and pkgsrc-wip source archives during installation; a failure
-is reported and the provisioning command can retry them after boot.
+`/usr/local/sbin/atv-provision-packages` as root to install the compiler and
+additional packages `tmux`, `micro`, `vim`, `mc` and `git`. The installer
+attempts to install `pkgin` and `pkg_chk` and fetch current pkgsrc and
+pkgsrc-wip source archives into the target during installation. It reports a
+failure if those steps do not complete; the provisioning command can retry
+them after boot. Package progress and failures are reported to the same network
+collector and logged in `/var/log/atv-packages.log`. Downloads require Internet
+access.
 
 Add `--interactive-ssh` after the output path and optional public key to boot
 the USB into an SSH-accessible installer instead of starting the disk install
