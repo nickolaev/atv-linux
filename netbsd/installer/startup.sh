@@ -8,18 +8,6 @@ log=/var/log/atv-install.log
 report="$state/install-report.txt"
 mkdir -p "$state" || exit 1
 
-send_report() {
-    attempt=0
-    while [ "$attempt" -lt 30 ]; do
-        if nc -w 10 192.168.100.246 8083 < "$report"; then
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 10
-    done
-    return 1
-}
-
 # install.sh persists this marker before it modifies the disk. Never retry an
 # interrupted or completed installation automatically.
 if [ -e "$state/install-started" ]; then
@@ -36,8 +24,7 @@ if [ -e "$state/install-started" ]; then
         } > "$report"
         sync
     fi
-    send_report
-    exit $?
+    exit 0
 fi
 
 {
@@ -61,4 +48,3 @@ sync
     echo 'report=complete'
 } > "$report"
 sync
-send_report

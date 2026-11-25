@@ -45,7 +45,7 @@ def main():
         "-device", f"ide-hd,drive=target,model={args.disk_model}",
         "-vga", "std", "-display", "none", "-monitor", "none",
         "-serial", f"file:{args.work / 'serial.log'}",
-        "-netdev", "user,id=net0,net=192.168.100.0/24,host=192.168.100.246,dhcpstart=192.168.100.191",
+        "-netdev", "user,id=net0,net=192.168.100.0/24,dhcpstart=192.168.100.191",
         "-device", "rtl8139,netdev=net0",
         "-qmp", f"unix:{qmp},server=on,wait=off", "-no-reboot", "-no-shutdown",
     ]

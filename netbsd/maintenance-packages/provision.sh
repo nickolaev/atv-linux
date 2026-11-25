@@ -26,7 +26,6 @@ report() {
         tail -n 80 "$log" 2>/dev/null || :
         echo report=complete
     } > "$state/report.txt"
-    nc -w 10 192.168.100.246 8083 < "$state/report.txt" 2>/dev/null || :
     rmdir "$lock" 2>/dev/null || :
     exit "$result"
 }

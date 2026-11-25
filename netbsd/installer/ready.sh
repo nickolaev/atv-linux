@@ -1,5 +1,5 @@
 #!/bin/sh
-# Report the installed system after its network interface obtains an address.
+# Record the installed system state after its network interface obtains an address.
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 export PATH
 report=/var/run/atv-ready-report.txt
@@ -46,13 +46,3 @@ swapctl -lk | awk -v dev="/dev/$swapdk" '$1 == dev {found=1} END {exit !found}' 
     cat /etc/dhcpcd.conf
     echo 'report=complete'
 } > "$report" 2>&1
-
-attempt=0
-while [ "$attempt" -lt 30 ]; do
-    if nc -w 10 192.168.100.246 8083 < "$report"; then
-        exit 0
-    fi
-    attempt=$((attempt + 1))
-    sleep 10
-done
-exit 1

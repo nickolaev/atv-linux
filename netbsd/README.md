@@ -29,8 +29,9 @@ The image automatically repartitions the **FUJITSU MHW2040AT with 78,140,160
 sectors** detected on the tested Apple TV. It erases that disk and installs
 NetBSD 11.1 with a 1 GiB swap partition, hostname `atv` and DHCP. The guard
 currently rejects replacement internal disks. Installation and readiness
-reports are sent to `192.168.100.246:8083`; adjust the scripts and collector
-for a different network. The USB's temporary root skips `fsck` because the
+reports are written locally (`/var/db/atv-installer/install-report.txt` on the
+USB and `/var/run/atv-ready-report.txt` on the installed system); nothing is
+sent over the network. The USB's temporary root skips `fsck` because the
 host `makefs` image failed a repeat-boot check. The installed root is created
 with NetBSD `newfs` and retains normal filesystem checks.
 
@@ -41,8 +42,7 @@ key stays on the build host. After logging in, run
 attempts to install `pkgin`, `pkg_chk` and `git` and fetch current pkgsrc and
 a Git-updateable pkgsrc-wip checkout into the target during installation. It reports a
 failure if those steps do not complete; the provisioning command can retry
-them after boot. Package progress and failures are reported to the same network
-collector and logged in `/var/log/atv-packages.log`. Downloads require Internet
+them after boot. Package progress and failures are logged in `/var/log/atv-packages.log`. Downloads require Internet
 access.
 
 Add `--interactive-ssh` after the output path and optional public key to boot

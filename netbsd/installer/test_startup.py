@@ -14,10 +14,8 @@ class StartupTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.bin = self.root / "bin"
         self.bin.mkdir()
-        self.sent = self.root / "sent"
-        self.mock("nc", 'cat > "$MOCK_SENT"')
         self.mock("sleep", "exit 0")
-        self.env = {**os.environ, "MOCK_SENT": str(self.sent)}
+        self.env = {**os.environ}
 
     def mock(self, name, code):
         path = self.bin / name
@@ -42,8 +40,9 @@ class StartupTests(unittest.TestCase):
         state.mkdir()
         (state / "install-started").write_text("started")
         subprocess.run(["sh", self.script("startup.sh")], check=True, env=self.env)
-        self.assertIn("result=interrupted", self.sent.read_text())
-        self.assertIn("report=complete", self.sent.read_text())
+        report = (state / "install-report.txt").read_text()
+        self.assertIn("result=interrupted", report)
+        self.assertIn("report=complete", report)
 
     def test_ready_requires_root_swap_network_and_hostname(self):
         self.mock("hostname", "echo atv")
@@ -53,14 +52,14 @@ class StartupTests(unittest.TestCase):
         self.mock("swapctl", "echo '/dev/dk5 1048576 0'")
         script = self.script("ready.sh")
         subprocess.run(["sh", script], check=True, env=self.env)
-        self.assertIn("result=ready", self.sent.read_text())
+        self.assertIn("result=ready", (self.root / "ready").read_text())
         self.mock("swapctl", "echo 'no swap devices configured'")
         subprocess.run(["sh", script], check=True, env=self.env)
-        self.assertIn("result=degraded", self.sent.read_text())
+        self.assertIn("result=degraded", (self.root / "ready").read_text())
         self.mock("swapctl", "echo '/dev/dk5 1048576 0'")
         self.mock("mount", "echo '/dev/dk4 on / type msdos (local)'")
         subprocess.run(["sh", script], check=True, env=self.env)
-        self.assertIn("result=degraded", self.sent.read_text())
+        self.assertIn("result=degraded", (self.root / "ready").read_text())
 
 
 if __name__ == "__main__":
