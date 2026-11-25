@@ -2,6 +2,8 @@
 
 This project builds a USB image for first-generation Apple TV with Debian 12 (Bookworm) i386 and Alpine Linux 3.24.4 x86, using the existing legacy bootloader. Bookworm is oldstable/LTS, not current Debian stable. The image does not yet include an installer.
 
+The separate [NetBSD installer](netbsd/README.md) uses the Apple TV's native EFI boot path and does not change the Debian and Alpine build. It has installed NetBSD 11.1 on the tested Apple TV's internal disk and booted it without USB.
+
 ## Build
 
 Use an i386-compatible Debian-based Linux build host with a current Debian archive keyring; the Alpine build chroots into x86 userspace. The build runs as root, installs host packages, creates loop devices and mounts filesystems. Run it in a dedicated VM or disposable build environment:
@@ -11,6 +13,8 @@ make
 ```
 
 The output is `image/atv-linux.img`. The filesystem build creates `filesystem/debian-appletv-filesystem.tar.xz` and its checksum; an existing archive is reused. Run `make clean` only when those local build outputs may be removed.
+
+For the separate NetBSD USB image, see the [NetBSD build instructions](netbsd/README.md#build-the-unattended-netbsd-installer). The two image builders have separate outputs and inputs.
 
 The root partitions are labeled `ATVTESTROOT` and `ATVALPINE`, so avoid attaching multiple copies at once. The legacy boot menu still assumes `(hd1,1)`; other disk orders have not been validated.
 

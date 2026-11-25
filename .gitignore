@@ -9,3 +9,4 @@
 
 /filesystem/alpine/cache/
 /filesystem/alpine-3.24.4-x86.tar
+netbsd/**/__pycache__/

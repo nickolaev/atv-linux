@@ -1,0 +1,73 @@
+#!/bin/sh
+# This process stays in tmux after installation exits so its result is visible.
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+state=/var/db/atv-installer
+mkdir -p "$state"
+account_file=''
+tty_hidden=no
+cleanup() {
+    [ "$tty_hidden" = no ] || stty echo
+    [ -z "$account_file" ] || rm -f "$account_file"
+}
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
+# Capture terminal output on the USB for inspection after a disconnect.
+tmux pipe-pane -o -t atv-install:0.0 "cat >> /var/log/atv-install.log" || {
+    echo "Cannot start the installation log." >&2
+    exit 1
+}
+printf 'Installing NetBSD on the internal Apple TV disk (wd0).\n'
+printf 'All existing data on that disk will be erased.\n\n'
+printf 'Choose an administrator account for the installed system.\n'
+while :; do
+    printf 'Username: '
+    IFS= read -r username || exit 1
+    case "$username" in
+        ''|root|*[!a-z0-9_-]*|[!a-z]*)
+            echo 'Use a name starting with a lowercase letter, followed by lowercase letters, numbers, _ or -.' ;;
+        *) [ "${#username}" -le 16 ] && ! getent passwd "$username" >/dev/null 2>&1 && break
+           echo 'Username is already in use or longer than 16 characters.' ;;
+    esac
+done
+read_password_hash() {
+ while :; do
+    tty_hidden=yes
+    stty -echo
+    printf '%s password: ' "$1"
+    IFS= read -r password || { stty echo; exit 1; }
+    printf '\nConfirm password: '
+    IFS= read -r confirmation || { stty echo; exit 1; }
+    stty echo
+    tty_hidden=no
+    printf '\n'
+    [ -n "$password" ] && [ "$password" = "$confirmation" ] && break
+    echo 'Passwords must match and cannot be empty.'
+ done
+ password_hash=$(printf '%s\n' "$password" | pwhash) || exit 1
+ unset password confirmation
+}
+umask 077
+account_file=$(mktemp /var/run/atv-account.XXXXXXXX) || exit 1
+read_password_hash 'Administrator'
+printf '%s\n%s\n' "$username" "$password_hash" > "$account_file"
+unset password_hash
+echo 'Choose a separate root password for administration with su.'
+read_password_hash 'Root'
+printf '%s\n' "$password_hash" >> "$account_file"
+unset password_hash
+status=0
+/usr/atv-installer/bin/install.sh wd0 /usr/atv-installer "$state" "$account_file" || status=$?
+rm -f "$account_file"
+account_file=''
+trap - EXIT HUP INT TERM
+printf '%s\n' "$status" > "$state/session-exit-status"
+if [ "$status" -eq 0 ]; then
+    printf '\nInstallation completed. Power off and remove the USB before booting the internal disk.\n'
+else
+    printf '\nInstallation stopped with status %s. Do not assume it completed.\n' "$status"
+    printf 'The started marker and output above help diagnose the failure.\n'
+fi
+printf 'Press Enter to close this session.\n'
+IFS= read -r _ || :
+exit "$status"

@@ -1,0 +1,32 @@
+#!/bin/sh
+# Start or reconnect to the installer in a persistent terminal session.
+set -eu
+PATH=/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+if [ "$#" -gt 0 ]; then
+    echo 'Usage: atv-install'
+    echo 'Starts or reconnects to the NetBSD installation session.'
+    echo 'WARNING: Starting installation erases the internal Apple TV disk.'
+    echo 'Detach with Ctrl-b, then d; reconnect by running atv-install again.'
+    [ "$#" -eq 1 ] && [ "$1" = --help ] && exit 0
+    exit 2
+fi
+[ -t 0 ] && [ -t 1 ] || { echo 'Run atv-install in an interactive SSH terminal.' >&2; exit 1; }
+command -v tmux >/dev/null 2>&1 || { echo 'tmux is not installed.' >&2; exit 1; }
+if [ -n "${TMUX:-}" ]; then
+    echo 'Leave the current tmux session before running atv-install.' >&2
+    exit 1
+fi
+bold='' cyan='' yellow='' reset=''
+if [ -t 1 ] && [ "${TERM:-dumb}" != dumb ] && [ -z "${NO_COLOR:-}" ]; then
+    bold=$(printf '\033[1m')
+    cyan=$(printf '\033[36m')
+    yellow=$(printf '\033[33m')
+    reset=$(printf '\033[0m')
+fi
+printf '\n%s%s  APPLE TV  /  NETBSD INSTALLER%s\n' "$bold" "$cyan" "$reset"
+printf '  %s%sWARNING: A new installation erases the internal disk.%s\n' "$bold" "$yellow" "$reset"
+printf '  Detach: Ctrl-b, then d   |   Reconnect: atv-install\n\n'
+mkdir -p /var/db/atv-installer
+exec tmux new-session -A -s atv-install /usr/atv-installer/bin/install-session
